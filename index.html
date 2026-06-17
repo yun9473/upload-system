@@ -551,7 +551,7 @@ const DEFAULT_CODES = {
 // sg:'c3': 구조보고서 그룹 (1개면 충족)
 const CHECKLIST = [
   {key:'overview', label:'학교별 개요',          cat:'common', cl:'공통',     folder:'07. 사업계획서',                kw:['개요','사업계획','기본현황'],        req:true, uploader:'agency'},
-  {key:'drawing',  label:'도면',                  cat:'common', cl:'공통',     folder:'01. 도면',                      kw:['도면','dwg','dxf','cad'],            req:true, uploader:'agency'},
+  {key:'drawing',  label:'도면',                  cat:'common', cl:'공통',     folder:'01. 도면',                      kw:['도면','dwg','dxf','cad','배치도','평면도','입면도','단면도','상세도','구조도','설비도','전기도','배관도','조경도','토목도','건축도','위치도','현황도'],            req:true, uploader:'agency'},
   {key:'building', label:'건축물대장',             cat:'common', cl:'공통',     folder:'04. 건축물대장',                kw:['건축물대장','건물대장'],             req:true, uploader:'agency'},
   {key:'public',   label:'공유재산관리대장',       cat:'common', cl:'공통',     folder:'05. 공유재산관리대장',          kw:['공유재산'],                          req:true, uploader:'agency', priv:true},
   {key:'student',  label:'중장기 학생 배치계획',  cat:'func',   cl:'기능/성능', folder:'10. 기타',                     kw:['배치계획','학생배치','중장기'],      req:true, uploader:'agency'},
@@ -566,7 +566,7 @@ const CHECKLIST = [
 ];
 
 const FOLDER_KW = [
-  {f:'01. 도면',                        kw:['도면','dwg','dxf','cad']},
+  {f:'01. 도면',                        kw:['도면','dwg','dxf','cad','배치도','평면도','입면도','단면도','상세도','구조도','설비도','전기도','배관도','조경도','토목도','건축도','위치도','현황도','지적도','지형도']},
   {f:'02. 정밀(정기)안전점검 보고서',   kw:['3종','정기점검','정기안전','안전점검','정밀점검','정밀진단']},
   {f:'03. 내진성능평가보고서',          kw:['내진','내진성능','내진평가']},
   {f:'04. 건축물대장',                  kw:['건축물대장','건물대장']},
