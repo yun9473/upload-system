@@ -1002,14 +1002,14 @@ async function uploadViaPA(paUrl, file, fullPath){
   const fileName=parts.pop();
   const folderPath=parts.join('/');
   const b64=await fileToBase64(file);
-  const res=await fetch('/api/proxy',{
+  // Content-Type 헤더 없이 전송 → 브라우저가 text/plain으로 처리 → CORS preflight 없음
+  const res=await fetch(paUrl,{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({paUrl, fileName, folderPath, fileContent:b64}),
+    body:JSON.stringify({fileName, folderPath, fileContent:b64}),
   });
   if(!res.ok){
-    const txt=await res.json().catch(()=>({}));
-    throw new Error(`오류 ${res.status}${txt.error?' — '+txt.error:''}`) ;
+    const txt=await res.text().catch(()=>'');
+    throw new Error(`오류 ${res.status}${txt?' — '+txt.slice(0,60):''}`);
   }
 }
 
