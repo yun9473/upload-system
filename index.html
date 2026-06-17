@@ -581,11 +581,12 @@ const FOLDER_KW = [
 // STATE
 // ════════════════════════════════════
 let role='school', visIds=[], curSchoolId=null, schoolFiles=[], bulkFiles=[];
+let serverCfg = {}; // 서버에서 받아온 공유 설정
 
 // ════════════════════════════════════
 // CONFIG / STORE
 // ════════════════════════════════════
-const cfg = () => JSON.parse(localStorage.getItem('bzCfg')||'{}');
+const cfg = () => ({...JSON.parse(localStorage.getItem('bzCfg')||'{}'), ...serverCfg});
 const saveCfg = o => localStorage.setItem('bzCfg', JSON.stringify({...cfg(),...o}));
 const getCL = () => JSON.parse(localStorage.getItem('bzCL')||'{}');
 const setCLv = (sid,key,val) => {
@@ -810,8 +811,8 @@ async function loadServerConfig(){
     const res = await fetch('/api/config');
     if(!res.ok) return;
     const data = await res.json();
-    if(data.paUrl)    saveCfg({paUrl: data.paUrl});
-    if(data.basePath) saveCfg({basePath: data.basePath});
+    if(data.paUrl)    serverCfg.paUrl    = data.paUrl;
+    if(data.basePath) serverCfg.basePath = data.basePath;
   }catch(e){}
 }
 
