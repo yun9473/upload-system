@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>기초자료 수신 관리 시스템</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#3B6FE8;--blue-d:#2c5ccc;--blue-l:#eef3ff;
+  --green:#1a8c4a;--green-l:#e8f8ee;
+  --red:#c0392b;--red-l:#fdf0ef;
+  --amber:#d97706;--amber-l:#fffbeb;
+  --gray:#64748b;--gray-l:#f8fafc;--gray-b:#e2e8f0;
+  --text:#1e293b;--text2:#475569;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.09);
+}
+body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;color:var(--text);min-height:100vh}
+.app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.tu{background:rgba(255,255,255,.15);padding:4px 10px;border-radius:99px;font-size:12px}
+.tbtn{background:rgba(255,255,255,.18);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+.tbtn:hover{background:rgba(255,255,255,.28)}
+.body-wrap{display:flex;flex:1;overflow:hidden;height:calc(100vh - 52px)}
+.sidebar{width:220px;background:#1e293b;color:#cbd5e1;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
+.s-sec{padding:8px 0}
+.s-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;color:#64748b;padding:8px 14px 4px}
+.s-item{padding:8px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:7px;border-left:3px solid transparent;transition:.15s}
+.s-item:hover{background:rgba(255,255,255,.06)}
+.s-item.active{background:rgba(59,111,232,.25);border-left-color:var(--blue);color:#fff}
+.s-item span.sname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.sbadge{margin-left:auto;padding:1px 5px;border-radius:99px;font-size:10px;flex-shrink:0}
+.sbadge.ok{background:var(--green);color:#fff}
+.sbadge.part{background:var(--amber);color:#fff}
+.sbadge.no{background:#334155;color:#94a3b8}
+.main{flex:1;overflow-y:auto;padding:20px 24px}
+.screen{display:none}.screen.active{display:block}
+
+/* LOGIN */
+#screen-login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a8a,#3B6FE8)}
+.lcard{background:#fff;border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,.2);padding:44px 40px;width:100%;max-width:420px}
+.llogo{font-size:40px;text-align:center;margin-bottom:8px}
+.ltitle{font-size:21px;font-weight:700;text-align:center;margin-bottom:4px}
+.lsub{font-size:13px;color:var(--gray);text-align:center;margin-bottom:28px}
+.ltabs{display:flex;gap:6px;margin-bottom:20px;background:var(--gray-l);padding:4px;border-radius:9px}
+.ltab{flex:1;padding:8px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;color:var(--gray);transition:.15s}
+.ltab.active{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.fg{margin-bottom:14px}
+.fl{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;display:block}
+.fi{width:100%;padding:10px 12px;border:1.5px solid var(--gray-b);border-radius:8px;font-size:14px;color:var(--text);outline:none;transition:border .15s;font-family:inherit}
+.fi:focus{border-color:var(--blue)}
+.btn{padding:10px 18px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.btn-p{background:var(--blue);color:#fff}.btn-p:hover{background:var(--blue-d)}.btn-p:disabled{opacity:.45;cursor:not-allowed}
+.btn-o{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.btn-o:hover{background:var(--blue-l)}
+.btn-g{background:var(--green);color:#fff}
+.btn-r{background:var(--red);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-fw{width:100%;justify-content:center}
+.lerr{color:var(--red);font-size:13px;margin-top:8px;text-align:center;min-height:18px}
+
+/* CARD */
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 22px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+
+/* PA STATUS */
+.pa-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px}
+.pa-banner.ok{background:var(--green-l);border:1px solid #a7f3d0;color:var(--green)}
+.pa-banner.warn{background:var(--amber-l);border:1px solid #fde68a;color:var(--amber)}
+
+/* DROP ZONE */
+.dz{border:2px dashed var(--gray-b);border-radius:12px;background:var(--gray-l);padding:36px 20px;text-align:center;cursor:pointer;transition:.2s;position:relative}
+.dz:hover,.dz.over{border-color:var(--blue);background:var(--blue-l)}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-ico{font-size:36px;display:block;margin-bottom:8px}
+.dz-t{font-size:14px;font-weight:600;margin-bottom:4px}
+.dz-h{font-size:12px;color:var(--gray)}
+
+/* FILE LIST */
+.flist{display:flex;flex-direction:column;gap:5px;margin:10px 0}
+.fitem{display:flex;align-items:center;gap:8px;background:var(--gray-l);border-radius:8px;padding:7px 11px;font-size:13px}
+.fitem-ico{font-size:17px;flex-shrink:0}
+.fitem-info{flex:1;min-width:0}
+.fitem-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fitem-meta{font-size:11px;color:var(--gray);margin-top:1px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.fpill{padding:1px 6px;border-radius:99px;font-size:11px;font-weight:600}
+.fpill-folder{background:#f1f5f9;color:var(--gray)}
+.fpill-ok{background:var(--green-l);color:var(--green)}
+.fpill-err{background:var(--red-l);color:var(--red)}
+.fremove{background:none;border:none;cursor:pointer;color:#94a3b8;font-size:16px;padding:2px 4px;border-radius:4px;flex-shrink:0}
+.fremove:hover{color:var(--red)}
+
+/* TAG */
+.tag{display:inline-block;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:600}
+.tc{background:#e0f2fe;color:#0369a1}
+.tf{background:#fef9c3;color:#854d0e}
+.ts{background:#fce7f3;color:#9d174d}
+.te{background:#d1fae5;color:#065f46}
+
+/* CHECKLIST */
+.cl-section{margin-bottom:12px}
+.cl-sec-hd{font-size:11px;font-weight:700;letter-spacing:.4px;padding:5px 10px;border-radius:6px;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.cl-sec-hd.req{background:#dbeafe;color:#1e40af}
+.cl-sec-hd.opt{background:#f1f5f9;color:#475569}
+.cl-sec-hd.ag{background:#f5f3ff;color:#6d28d9}
+.cl-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.cl-tbl th,.cl-tbl td{padding:7px 9px;border-bottom:1px solid var(--gray-b);text-align:left;vertical-align:middle}
+.cl-tbl th{background:var(--gray-l);font-size:11px;font-weight:700;color:var(--gray)}
+.cl-tbl tr:last-child td{border-bottom:none}
+.cl-tbl tr.dim td{opacity:.55}
+.vo{color:var(--green);font-weight:700}
+.vx{color:var(--red);font-weight:700}
+.vna{color:var(--amber);font-size:10px;font-weight:600}
+.vyr{color:var(--blue);font-size:12px;font-weight:600}
+
+/* PROGRESS */
+.pgw{display:none;margin:10px 0}.pgw.on{display:block}
+.pgl{font-size:12px;color:var(--text2);margin-bottom:4px;display:flex;justify-content:space-between}
+.pgbg{height:8px;background:var(--gray-b);border-radius:99px;overflow:hidden}
+.pgfill{height:100%;background:linear-gradient(90deg,var(--blue),#7aa4f8);border-radius:99px;transition:width .3s;width:0}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.scard{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:var(--shadow)}
+.slabel{font-size:12px;color:var(--gray);margin-bottom:4px}
+.sval{font-size:24px;font-weight:700}
+.sval.b{color:var(--blue)}.sval.g{color:var(--green)}.sval.r{color:var(--red)}.sval.a{color:var(--amber)}
+
+/* OVERVIEW TABLE */
+.ovw{overflow-x:auto;border-radius:8px;border:1px solid var(--gray-b)}
+.ovt{border-collapse:collapse;font-size:12px;min-width:100%}
+.ovt th,.ovt td{border:1px solid var(--gray-b);text-align:center;vertical-align:middle;padding:5px 6px}
+.ovt th{background:#f8fafc;font-weight:700;font-size:11px}
+.ovt td.sname{text-align:left;font-weight:600;white-space:nowrap;padding:6px 10px;background:#fff}
+.ovt td.reg{font-size:10px;color:var(--gray);white-space:nowrap}
+/* Vertical header */
+.ovt th.vhdr{width:36px;max-width:40px;padding:6px 2px;height:100px;vertical-align:bottom}
+.ovt th.vhdr .vt{writing-mode:vertical-rl;font-size:10px;font-weight:600;white-space:nowrap;line-height:1.3;display:block;text-align:left}
+/* Cat colours */
+.cat-c{background:#dbeafe;color:#1e40af}
+.cat-f{background:#fef9c3;color:#78350f}
+.cat-s{background:#fce7f3;color:#9d174d}
+.cat-e{background:#d1fae5;color:#065f46}
+.cat-h{background:#f8fafc;color:#374151}
+.ovt-o{color:var(--green);font-weight:700;font-size:14px}
+.ovt-x{color:var(--red);font-weight:700;font-size:14px}
+.ovt-na{color:var(--amber);font-size:10px;font-weight:600;line-height:1.2}
+.ovt-yr{color:var(--blue);font-size:11px;font-weight:600}
+.pct-ok{background:var(--green-l);color:var(--green);font-weight:700;font-size:11px}
+.pct-half{background:var(--amber-l);color:var(--amber);font-weight:700;font-size:11px}
+.pct-low{background:var(--red-l);color:var(--red);font-weight:700;font-size:11px}
+
+/* ROUTING TABLE */
+.rt-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.rt-tbl th,.rt-tbl td{padding:7px 9px;border-bottom:1px solid var(--gray-b);vertical-align:middle}
+.rt-tbl th{background:var(--gray-l);font-size:11px;font-weight:700;color:var(--gray)}
+.rt-sel{width:100%;padding:4px 6px;border:1px solid var(--gray-b);border-radius:5px;font-size:12px;font-family:inherit;outline:none}
+.rt-sel:focus{border-color:var(--blue)}
+
+/* SCHOOL TABS */
+.stabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.stab{padding:5px 11px;border:1.5px solid var(--gray-b);border-radius:99px;font-size:12px;cursor:pointer;background:#fff;color:var(--text2);transition:.15s;font-weight:500}
+.stab:hover{border-color:var(--blue);color:var(--blue)}
+.stab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.rlbl{font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.5px;margin-bottom:5px}
+
+/* SPLIT */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.split{grid-template-columns:1fr}}
+
+/* ADMIN */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.admin-grid{grid-template-columns:1fr}}
+.ctbl{width:100%;border-collapse:collapse;font-size:13px}
+.ctbl th,.ctbl td{padding:7px 9px;border-bottom:1px solid var(--gray-b);text-align:left}
+.ctbl th{background:var(--gray-l);font-size:11px;font-weight:700;color:var(--gray)}
+.ctbl input{width:100%;padding:4px 8px;border:1px solid var(--gray-b);border-radius:5px;font-size:12px;font-family:inherit;outline:none}
+.ctbl input:focus{border-color:var(--blue)}
+
+/* TOAST */
+.twrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:9999}
+.toast{padding:11px 15px;border-radius:9px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:ti .25s ease}
+.toast.success{background:var(--green);color:#fff}
+.toast.error{background:var(--red);color:#fff}
+.toast.info{background:#1d4ed8;color:#fff}
+@keyframes ti{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* MODAL */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
+.mbg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:26px;width:min(500px,95vw);box-shadow:0 8px 40px rgba(0,0,0,.2)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:12px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="screen-login">
+  <div class="lcard">
+    <div class="llogo">📂</div>
+    <div class="ltitle">기초자료 수신 관리 시스템</div>
+    <div class="lsub">2026 개축타당성 평가 연구용역</div>
+    <div class="ltabs">
+      <button class="ltab active" onclick="switchLTab('school',this)">🏫 학교</button>
+      <button class="ltab" onclick="switchLTab('agency',this)">🏛️ 발주청</button>
+      <button class="ltab" onclick="switchLTab('admin',this)">⚙️ 관리자</button>
+    </div>
+    <div id="lp-school">
+      <div class="fg"><label class="fl">학교 접속 코드</label>
+        <input class="fi" id="l-sc" type="password" placeholder="부여받은 학교 코드 입력" autocomplete="off" onkeydown="if(event.key==='Enter')loginSchool()"/>
+      </div>
+      <button class="btn btn-p btn-fw" onclick="loginSchool()">접속하기</button>
+    </div>
+    <div id="lp-agency" style="display:none">
+      <div class="fg"><label class="fl">발주청 접속 코드</label>
+        <input class="fi" id="l-ac" type="password" placeholder="발주청 코드 입력" autocomplete="off" onkeydown="if(event.key==='Enter')loginAgency()"/>
+      </div>
+      <button class="btn btn-p btn-fw" onclick="loginAgency()">접속하기</button>
+    </div>
+    <div id="lp-admin" style="display:none">
+      <div class="fg"><label class="fl">관리자 비밀번호</label>
+        <input class="fi" id="l-ap" type="password" placeholder="관리자 비밀번호" autocomplete="off" onkeydown="if(event.key==='Enter')loginAdmin()"/>
+      </div>
+      <button class="btn btn-p btn-fw" onclick="loginAdmin()">로그인</button>
+    </div>
+    <div class="lerr" id="lerr"></div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="screen-app" class="app" style="display:none">
+  <div class="topbar">
+    <div class="topbar-title">📂 기초자료 수신 관리 시스템</div>
+    <div class="topbar-right">
+      <span class="tu" id="tu"></span>
+      <button class="tbtn" onclick="logout()">로그아웃</button>
+    </div>
+  </div>
+  <div class="body-wrap">
+    <div class="sidebar">
+      <div class="s-sec">
+        <div class="s-lbl">메뉴</div>
+        <div class="s-item active" id="mi-upload" onclick="showScreen('upload')"><span>☁️</span><span style="flex:1">파일 업로드</span></div>
+        <div class="s-item" id="mi-status" onclick="showScreen('status')"><span>📊</span><span style="flex:1">수신 현황</span></div>
+        <div class="s-item" id="mi-admin" style="display:none" onclick="showScreen('admin')"><span>⚙️</span><span style="flex:1">관리자 설정</span></div>
+      </div>
+      <div class="s-sec" style="border-top:1px solid #334155;margin-top:auto">
+        <div class="s-lbl">내 대상교</div>
+        <div id="sb-schools"></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- UPLOAD SCREEN -->
+      <div id="screen-upload" class="screen active">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:19px;font-weight:700">파일 업로드</div>
+            <div style="font-size:13px;color:var(--gray);margin-top:2px" id="up-sub"></div>
+          </div>
+          <button class="btn btn-o btn-sm" onclick="exportExcel()">📥 체크리스트 Excel</button>
+        </div>
+
+        <div id="pa-banner" class="pa-banner warn">⚠️ Power Automate URL 미설정</div>
+
+        <!-- Agency tabs -->
+        <div id="ag-tabs" style="display:none;margin-bottom:14px">
+          <div style="display:flex;gap:8px">
+            <button id="agtab-bulk" class="btn btn-p btn-sm" onclick="switchAgTab('bulk')">📦 일괄 업로드</button>
+            <button id="agtab-manual" class="btn btn-o btn-sm" onclick="switchAgTab('manual')">🏫 학교별 업로드</button>
+          </div>
+        </div>
+
+        <!-- BULK PANEL -->
+        <div id="panel-bulk" style="display:none">
+          <div class="card">
+            <div class="card-title">📦 발주청 일괄 업로드</div>
+            <div style="font-size:12px;background:var(--blue-l);padding:9px 12px;border-radius:7px;margin-bottom:12px;color:var(--text2)">
+              💡 파일명에 학교명이 포함되면 자동 분류됩니다.<br>
+              예: <code style="background:#fff;padding:1px 5px;border-radius:3px">동성중_교사1호동_건축물대장.pdf</code>
+            </div>
+            <div class="dz" id="dz-bulk">
+              <input type="file" id="fi-bulk" multiple/>
+              <span class="dz-ico">📁</span>
+              <div class="dz-t">파일 · 폴더 · ZIP을 끌어다 놓으세요</div>
+              <div class="dz-h">클릭: 파일 선택 &nbsp;|&nbsp; 모든 학교 파일 동시 업로드 가능</div>
+            </div>
+            <input type="file" id="fi-bulk-dir" webkitdirectory multiple style="display:none"/>
+            <button type="button" onclick="document.getElementById('fi-bulk-dir').click()" style="margin-top:6px;font-size:12px;background:none;border:1px solid var(--gray-b);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text2)">📂 폴더 선택</button>
+            <div id="rt-wrap" style="display:none;margin-top:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:13px;font-weight:600">분류 결과</span>
+                <span id="rt-summary" style="font-size:12px;color:var(--gray)"></span>
+              </div>
+              <div style="overflow-x:auto;margin-bottom:12px">
+                <table class="rt-tbl">
+                  <thead><tr><th style="width:28px">#</th><th>파일명</th><th style="width:200px">학교</th><th style="width:190px">저장 폴더</th><th style="width:65px">크기</th><th style="width:28px"></th></tr></thead>
+                  <tbody id="rt-tbody"></tbody>
+                </table>
+              </div>
+              <div class="pgw" id="pg-bulk">
+                <div class="pgl"><span id="pg-bulk-t">업로드 중…</span><span id="pg-bulk-p">0%</span></div>
+                <div class="pgbg"><div class="pgfill" id="pg-bulk-f"></div></div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn btn-p" id="btn-bulk" onclick="doBulkUpload()">☁️ 전체 업로드</button>
+                <button class="btn btn-o btn-sm" onclick="bulkFiles=[];renderBulkTable()">초기화</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCHOOL PANEL -->
+        <div id="panel-school">
+          <div id="school-tabs-card" class="card">
+            <div class="card-title">🏢 건물동 선택</div>
+            <div style="font-size:12px;color:var(--gray);margin-bottom:10px">같은 학교에 건물동이 여러 개 있습니다. 파일을 올릴 건물동을 선택하세요.</div>
+            <div id="stabs-body"></div>
+          </div>
+          <div id="sel-panel" style="display:none">
+            <div class="split">
+              <div>
+                <div class="card">
+                  <div class="card-title">📎 파일 업로드 <span id="sel-label" style="font-size:12px;font-weight:400;color:var(--gray)"></span></div>
+                  <!-- school-only info -->
+                  <div id="school-info-box" style="display:none;font-size:12px;padding:9px 12px;background:#dbeafe;border-radius:7px;margin-bottom:12px;color:#1e40af;line-height:1.7">
+                    <strong>학교 제출 자료 안내</strong><br>
+                    ✅ 필수: 실배치도, 사전인터뷰 자료<br>
+                    ○ 선택: 유지보수이력, 구조분야 보고서
+                  </div>
+                  <div class="dz" id="dz-school">
+                    <input type="file" id="fi-school" multiple/>
+                    <span class="dz-ico">📁</span>
+                    <div class="dz-t">파일 · 폴더 · ZIP을 끌어다 놓으세요</div>
+                    <div class="dz-h">클릭: 파일 선택 &nbsp;|&nbsp; Excel · 한글 · CAD · PDF · ZIP 등</div>
+                  </div>
+                  <input type="file" id="fi-school-dir" webkitdirectory multiple style="display:none"/>
+                  <button type="button" onclick="document.getElementById('fi-school-dir').click()" style="margin-top:6px;font-size:12px;background:none;border:1px solid var(--gray-b);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text2)">📂 폴더 선택</button>
+                  <div class="flist" id="flist-school"></div>
+                  <div class="pgw" id="pg-school">
+                    <div class="pgl"><span id="pg-school-t">업로드 중…</span><span id="pg-school-p">0%</span></div>
+                    <div class="pgbg"><div class="pgfill" id="pg-school-f"></div></div>
+                  </div>
+                  <button class="btn btn-p btn-fw" id="btn-school-up" onclick="doSchoolUpload()" disabled>☁️ SharePoint에 업로드</button>
+                </div>
+              </div>
+              <div>
+                <div class="card" style="max-height:580px;overflow-y:auto">
+                  <div class="card-title" style="position:sticky;top:0;background:#fff;z-index:2;padding-bottom:8px;border-bottom:1px solid var(--gray-b);margin-bottom:8px">
+                    ✅ 자료 체크리스트
+                    <button onclick="refreshCL()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:var(--blue)">🔄 새로고침</button>
+                  </div>
+                  <div id="cl-panel"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATUS SCREEN -->
+      <div id="screen-status" class="screen">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:19px;font-weight:700">수신 현황</div>
+          <button class="btn btn-o btn-sm" onclick="exportExcel()">📥 Excel 다운로드</button>
+        </div>
+        <div class="sgrid" id="stat-grid"></div>
+        <div class="card" style="padding:14px 16px">
+          <div class="card-title">전체 대상교 체크리스트</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center">
+            <span class="tag tc">공통</span>
+            <span class="tag tf">기능/성능</span>
+            <span class="tag ts">구조</span>
+            <span class="tag te">경제성</span>
+            <span style="font-size:11px;color:var(--gray);margin-left:4px">*구조보고서: 3종·정밀점검·정밀진단 중 1개 이상이면 O</span>
+          </div>
+          <div class="ovw" id="ov-wrap"></div>
+        </div>
+      </div>
+
+      <!-- ADMIN SCREEN -->
+      <div id="screen-admin" class="screen">
+        <div style="font-size:19px;font-weight:700;margin-bottom:16px">⚙️ 관리자 설정</div>
+        <div class="admin-grid">
+          <div class="card">
+            <div class="card-title">⚡ Power Automate 설정</div>
+            <div class="fg">
+              <label class="fl">HTTP 트리거 URL</label>
+              <textarea class="fi" id="a-paurl" rows="3" placeholder="https://prod-XX.westus.logic.azure.com:443/workflows/..." style="resize:vertical"></textarea>
+            </div>
+            <div class="fg">
+              <label class="fl">SharePoint 기준 폴더 경로</label>
+              <input class="fi" id="a-basepath" placeholder="예: 03. 연구"/>
+            </div>
+            <button class="btn btn-p btn-sm" onclick="savePaConfig()">저장</button>
+            <button class="btn btn-o btn-sm" style="margin-left:8px" onclick="testPaConnection()">연결 테스트</button>
+            <details style="margin-top:12px">
+              <summary style="font-size:12px;color:var(--blue);cursor:pointer;font-weight:600">📋 Power Automate 설정 방법 보기</summary>
+              <div style="font-size:12px;color:var(--text2);margin-top:8px;line-height:1.8;background:var(--gray-l);padding:12px;border-radius:7px">
+                <b>1.</b> <a href="https://make.powerautomate.com" target="_blank" style="color:var(--blue)">make.powerautomate.com</a> (Microsoft 365 로그인)<br>
+                <b>2.</b> 새 흐름 → 즉시 클라우드 흐름 → 트리거: <b>HTTP 요청을 받은 경우</b><br>
+                <b>3.</b> 요청 본문 JSON 스키마:<br>
+                <code style="background:#fff;padding:4px 8px;border-radius:4px;display:block;margin:4px 0;font-size:10px;word-break:break-all">{"type":"object","properties":{"fileName":{"type":"string"},"folderPath":{"type":"string"},"fileContent":{"type":"string"}},"required":["fileName","folderPath","fileContent"]}</code>
+                <b>4.</b> 새 단계 → SharePoint <b>파일 만들기</b><br>
+                &nbsp;&nbsp;파일 콘텐츠(식): <code>base64ToBinary(triggerBody()?['fileContent'])</code><br>
+                <b>5.</b> 저장 → HTTP POST URL 복사 → 위에 붙여넣기
+              </div>
+            </details>
+          </div>
+          <div class="card">
+            <div class="card-title">🔑 접속 코드 설정</div>
+            <div class="fg"><label class="fl">발주청 코드</label><input class="fi" id="a-agc" placeholder="교육청2026"/></div>
+            <div class="fg"><label class="fl">관리자 비밀번호</label><input class="fi" id="a-adp" type="password" placeholder="새 비밀번호 (변경 시만 입력)"/></div>
+            <button class="btn btn-p btn-sm" onclick="saveCodes()">저장</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🏫 학교별 접속 코드 관리
+            <button class="btn btn-g btn-sm" style="margin-left:auto" onclick="saveSchoolCodes()">💾 전체 저장</button>
+          </div>
+          <div style="font-size:12px;color:var(--gray);margin-bottom:10px">
+            같은 학교 여러 동: 동일한 코드를 입력하면 로그인 한 번에 모든 동에 접근됩니다.
+          </div>
+          <div style="overflow-x:auto">
+            <table class="ctbl">
+              <thead><tr><th>순번</th><th>학교명</th><th>건물동명</th><th>유형</th><th style="width:160px">접속 코드</th></tr></thead>
+              <tbody id="ctbl-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="background:var(--red-l);border:1px solid #fca5a5">
+          <div class="card-title">⚠️ 체크리스트 초기화</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:10px">저장된 수신 현황을 초기화합니다. SharePoint 파일은 유지됩니다.</div>
+          <button class="btn btn-r btn-sm" onclick="confirmReset()">초기화</button>
+        </div>
+      </div>
+    </div><!-- /main -->
+  </div><!-- /body-wrap -->
+</div><!-- /app -->
+
+<div class="twrap" id="twrap"></div>
+<div class="mbg" id="mbg">
+  <div class="modal">
+    <div class="modal-title" id="m-title"></div>
+    <div id="m-body" style="font-size:14px;color:var(--text2)"></div>
+    <div class="modal-actions">
+      <button class="btn btn-o btn-sm" onclick="closeModal()">취소</button>
+      <button class="btn btn-r btn-sm" id="m-ok">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════
+// MASTER DATA
+// ════════════════════════════════════
+const SCHOOLS = [
+  {id:1,  disp:21, school:'효촌초',     building:'본관동',            region:'1권역', area:'동두천양주', type:'공립'},
+  {id:2,  disp:22, school:'능곡초',     building:'본관',              region:'1권역', area:'고양',      type:'공립'},
+  {id:3,  disp:23, school:'능곡초',     building:'별관',              region:'1권역', area:'고양',      type:'공립'},
+  {id:5,  disp:24, school:'덕소초',     building:'교사1호동',         region:'1권역', area:'남양주',    type:'공립'},
+  {id:6,  disp:25, school:'덕소초',     building:'교사2호동',         region:'1권역', area:'남양주',    type:'공립'},
+  {id:7,  disp:26, school:'금촌초',     building:'본관동',            region:'1권역', area:'파주',      type:'공립'},
+  {id:8,  disp:27, school:'금촌초',     building:'후관동',            region:'1권역', area:'파주',      type:'공립'},
+  {id:9,  disp:28, school:'금촌초',     building:'급식실',            region:'1권역', area:'파주',      type:'공립'},
+  {id:10, disp:29, school:'경북중',     building:'본관',              region:'1권역', area:'포천',      type:'공립'},
+  {id:11, disp:30, school:'포천중',     building:'교사1호동',         region:'1권역', area:'포천',      type:'공립'},
+  {id:12, disp:31, school:'일동고',     building:'본관동',            region:'1권역', area:'포천',      type:'공립'},
+  {id:13, disp:32, school:'의정부여중', building:'교사2호동',         region:'1권역', area:'의정부',    type:'공립'},
+  {id:14, disp:15, school:'동부초',     building:'본관 가동',         region:'2권역', area:'광주하남',  type:'공립'},
+  {id:15, disp:16, school:'동부초',     building:'본관 나동',         region:'2권역', area:'광주하남',  type:'공립'},
+  {id:16, disp:17, school:'신하초',     building:'본관',              region:'2권역', area:'이천',      type:'공립'},
+  {id:17, disp:18, school:'대월중',     building:'본관동',            region:'2권역', area:'이천',      type:'공립'},
+  {id:18, disp:19, school:'백사중',     building:'본관동',            region:'2권역', area:'이천',      type:'공립'},
+  {id:19, disp:13, school:'한광여고',   building:'본관동',            region:'3권역', area:'평택',      type:'사립'},
+  {id:20, disp:14, school:'한광여고',   building:'별관22호동',        region:'3권역', area:'평택',      type:'사립'},
+  {id:21, disp:3,  school:'삼일고',     building:'본관동',            region:'3권역', area:'수원',      type:'사립'},
+  {id:22, disp:5,  school:'성문고',     building:'본관동(2동)',       region:'3권역', area:'안양과천',  type:'사립'},
+  {id:23, disp:4,  school:'명학초',     building:'본관동',            region:'3권역', area:'안양과천',  type:'공립'},
+  {id:24, disp:6,  school:'관양초',     building:'교사1호동',         region:'3권역', area:'안양과천',  type:'공립'},
+  {id:25, disp:7,  school:'관양초',     building:'교사2호동',         region:'3권역', area:'안양과천',  type:'공립'},
+  {id:26, disp:8,  school:'소사초',     building:'교사1호동',         region:'3권역', area:'부천',      type:'공립'},
+  {id:27, disp:9,  school:'소사초',     building:'교사2호동',         region:'3권역', area:'부천',      type:'공립'},
+  {id:28, disp:10, school:'부천여고',   building:'1호동(본관)',       region:'3권역', area:'부천',      type:'공립'},
+  {id:29, disp:11, school:'부천여고',   building:'4호동(지성원)',     region:'3권역', area:'부천',      type:'공립'},
+  {id:30, disp:12, school:'관산초',     building:'교사1호동(본관동)', region:'3권역', area:'안산',      type:'공립'},
+  {id:31, disp:1,  school:'동성중',     building:'교사1호동',         region:'3권역', area:'수원',      type:'공립'},
+  {id:32, disp:2,  school:'동성중',     building:'창고및교실',        region:'3권역', area:'수원',      type:'공립'},
+  {id:33, disp:20, school:'양진초',     building:'제1캠퍼스1호동',   region:'2권역', area:'안성',      type:'공립'},
+].sort((a,b)=>a.disp-b.disp);
+
+const sLabel = s => `${String(s.disp).padStart(2,'0')}. ${s.school} ${s.building}`;
+
+// 학교별 1코드 → 해당 학교 전체 동 접근
+// 동이 여러 개인 학교: 같은 코드에 모든 ID 포함
+const DEFAULT_CODES = {
+  '동성중'   : [31,32],
+  '삼일고'   : [21],
+  '명학초'   : [23],
+  '성문고'   : [22],
+  '관양초'   : [24,25],
+  '소사초'   : [26,27],
+  '부천여고' : [28,29],
+  '관산초'   : [30],
+  '한광여고' : [19,20],
+  '동부초'   : [14,15],
+  '신하초'   : [16],
+  '대월중'   : [17],
+  '백사중'   : [18],
+  '양진초'   : [33],
+  '효촌초'   : [1],
+  '능곡초'   : [2,3],
+  '덕소초'   : [5,6],
+  '금촌초'   : [7,8,9],
+  '경북중'   : [10],
+  '포천중'   : [11],
+  '일동고'   : [12],
+  '의정부여중': [13],
+};
+
+// uploader: 'agency'=발주청 제출 / 'school'=학교 제출
+// schoolReq: 학교 필수 항목 (완료율 산정 기준)
+// schoolOpt: 학교 선택 항목
+// priv: 사립학교 공유재산 자동 처리
+// sg:'c3': 구조보고서 그룹 (1개면 충족)
+const CHECKLIST = [
+  {key:'overview', label:'학교별 개요',          cat:'common', cl:'공통',     folder:'07. 사업계획서',                kw:['개요','사업계획','기본현황'],        req:true, uploader:'agency'},
+  {key:'drawing',  label:'도면',                  cat:'common', cl:'공통',     folder:'01. 도면',                      kw:['도면','dwg','dxf','cad'],            req:true, uploader:'agency'},
+  {key:'building', label:'건축물대장',             cat:'common', cl:'공통',     folder:'04. 건축물대장',                kw:['건축물대장','건물대장'],             req:true, uploader:'agency'},
+  {key:'public',   label:'공유재산관리대장',       cat:'common', cl:'공통',     folder:'05. 공유재산관리대장',          kw:['공유재산'],                          req:true, uploader:'agency', priv:true},
+  {key:'student',  label:'중장기 학생 배치계획',  cat:'func',   cl:'기능/성능', folder:'10. 기타',                     kw:['배치계획','학생배치','중장기'],      req:true, uploader:'agency'},
+  {key:'standard', label:'학교급별 시설기준',      cat:'func',   cl:'기능/성능', folder:'10. 기타',                     kw:['시설기준'],                          req:true, uploader:'agency'},
+  {key:'type3',    label:'3종시설물 정기점검',    cat:'struct', cl:'구조',     folder:'02. 정밀(정기)안전점검 보고서', kw:['3종','정기점검','정기안전'],         req:false, uploader:'school', sg:'c3', schoolOpt:true},
+  {key:'detail',   label:'정밀점검',               cat:'struct', cl:'구조',     folder:'02. 정밀(정기)안전점검 보고서', kw:['정밀점검'],                          req:false, uploader:'school', sg:'c3', schoolOpt:true},
+  {key:'precise',  label:'정밀진단',               cat:'struct', cl:'구조',     folder:'02. 정밀(정기)안전점검 보고서', kw:['정밀진단'],                          req:false, uploader:'school', sg:'c3', schoolOpt:true},
+  {key:'seismic',  label:'내진성능평가보고서',     cat:'struct', cl:'구조',     folder:'03. 내진성능평가보고서',         kw:['내진','내진성능','내진평가'],        req:true,  uploader:'school', schoolOpt:true},
+  {key:'maint',    label:'유지보수이력(최근 10년)',cat:'econ',   cl:'경제성',   folder:'10. 기타',                      kw:['유지보수','유지관리이력','보수이력'],req:true,  uploader:'school', schoolOpt:true},
+  {key:'realmap',  label:'실배치도',               cat:'common', cl:'공통',     folder:'#대상교 실배치도',              kw:['실배치도','배치도'],                 req:true,  uploader:'school', schoolReq:true},
+  {key:'interview',label:'사전인터뷰 자료',        cat:'common', cl:'공통',     folder:'#사전인터뷰자료',               kw:['인터뷰','사전인터뷰','면담'],        req:true,  uploader:'school', schoolReq:true},
+];
+
+const FOLDER_KW = [
+  {f:'01. 도면',                        kw:['도면','dwg','dxf','cad']},
+  {f:'02. 정밀(정기)안전점검 보고서',   kw:['3종','정기점검','정기안전','안전점검','정밀점검','정밀진단']},
+  {f:'03. 내진성능평가보고서',          kw:['내진','내진성능','내진평가']},
+  {f:'04. 건축물대장',                  kw:['건축물대장','건물대장']},
+  {f:'05. 공유재산관리대장',            kw:['공유재산']},
+  {f:'06. SP',                          kw:['sp과부족','시설sp','학교sp']},
+  {f:'07. 사업계획서',                  kw:['사업계획','개요','기본현황']},
+  {f:'08. 증축이력 결과',               kw:['증축이력','증축']},
+  {f:'09. 현장사진',                    kw:['현장사진']},
+];
+
+// ════════════════════════════════════
+// STATE
+// ════════════════════════════════════
+let role='school', visIds=[], curSchoolId=null, schoolFiles=[], bulkFiles=[];
+
+// ════════════════════════════════════
+// CONFIG / STORE
+// ════════════════════════════════════
+const cfg = () => JSON.parse(localStorage.getItem('bzCfg')||'{}');
+const saveCfg = o => localStorage.setItem('bzCfg', JSON.stringify({...cfg(),...o}));
+const getCL = () => JSON.parse(localStorage.getItem('bzCL')||'{}');
+const setCLv = (sid,key,val) => {
+  const d=getCL(); if(!d[sid]) d[sid]={};
+  d[sid][key]=val; localStorage.setItem('bzCL',JSON.stringify(d));
+};
+const getSchoolCodes = () => cfg().schoolCodes || DEFAULT_CODES;
+
+// ════════════════════════════════════
+// FILE UTILS
+// ════════════════════════════════════
+const FICONS={xlsx:'📊',xls:'📊',csv:'📊',hwp:'📝',hwpx:'📝',doc:'📝',docx:'📝',dwg:'📐',dxf:'📐',pdf:'📄',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',tif:'🖼️',tiff:'🖼️',zip:'🗜️','7z':'🗜️'};
+const ext = n => n.split('.').pop().toLowerCase();
+const fmtSz = b => b<1024?b+'B':b<1048576?(b/1024).toFixed(1)+'KB':(b/1048576).toFixed(1)+'MB';
+
+function detectFolder(fname){
+  const l=fname.toLowerCase().replace(/\s/g,'');
+  for(const {f,kw} of FOLDER_KW) for(const k of kw) if(l.includes(k)) return f;
+  return '10. 기타';
+}
+function extractYear(fname){ const m=fname.match(/20\d{2}/); return m?m[0]:null; }
+
+function detectSchool(fname){
+  const l=fname.toLowerCase().replace(/[\s_\-]/g,'');
+  for(const s of SCHOOLS){
+    const full=(s.school+s.building).toLowerCase().replace(/\s/g,'');
+    if(l.includes(full)) return {id:s.id,ambig:false};
+  }
+  const hits=[];
+  for(const s of SCHOOLS) if(l.includes(s.school.toLowerCase())) hits.push(s.id);
+  if(hits.length===1) return {id:hits[0],ambig:false};
+  if(hits.length>1)   return {id:hits[0],ambig:true};
+  return {id:null,ambig:false};
+}
+
+// ── 폴더/ZIP 드롭 지원 ──
+async function getDroppedFiles(e){
+  const files=[];
+  const items=[...(e.dataTransfer.items||[])];
+  if(items.length&&items[0].webkitGetAsEntry){
+    for(const item of items){
+      const entry=item.webkitGetAsEntry();
+      if(entry){const ef=await readEntry(entry,'');files.push(...ef);}
+    }
+  } else {
+    files.push(...e.dataTransfer.files);
+  }
+  return files;
+}
+async function readEntry(entry,basePath){
+  if(entry.isFile){
+    return new Promise(res=>{
+      entry.file(f=>{f._dropFolder=basePath;res([f]);},()=>res([]));
+    });
+  }
+  if(entry.isDirectory){
+    const all=[];
+    const reader=entry.createReader();
+    const readAll=()=>new Promise(res=>{
+      const batch=[];
+      const read=()=>reader.readEntries(es=>{
+        if(!es.length) res(batch);
+        else{batch.push(...es);read();}
+      });
+      read();
+    });
+    const entries=await readAll();
+    const path=basePath+(basePath?'/':'')+entry.name;
+    for(const e of entries){const sf=await readEntry(e,path);all.push(...sf);}
+    return all;
+  }
+  return [];
+}
+function detectFolderSmart(file){
+  if(file._dropFolder){
+    const top=file._dropFolder.split('/')[0];
+    const known=['01. 도면','02. 정밀(정기)안전점검 보고서','03. 내진성능평가보고서',
+      '04. 건축물대장','05. 공유재산관리대장','06. SP','07. 사업계획서',
+      '08. 증축이력 결과','09. 현장사진','10. 기타','#대상교 실배치도','#사전인터뷰자료'];
+    if(known.includes(top)) return top;
+  }
+  return detectFolder(file.name);
+}
+
+function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>{
+      const msg=r.error?.message||'';
+      const isCloud=msg.includes('could not be found')||msg.includes('NotFoundError');
+      rej(new Error(isCloud
+        ?'클라우드 전용 파일입니다. 파일 탐색기에서 우클릭→"항상 이 장치에 유지" 후 재시도하세요'
+        :`파일 읽기 실패: ${msg||'알 수 없는 오류'}`));
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+// ════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════
+function switchLTab(tab,el){
+  document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['school','agency','admin'].forEach(t=>{document.getElementById('lp-'+t).style.display=t===tab?'block':'none';});
+}
+function loginSchool(){
+  const code=document.getElementById('l-sc').value.trim();
+  const codes=getSchoolCodes();
+  const ids=codes[code];
+  if(ids&&ids.length){ role='school'; visIds=[...ids]; startApp(`학교 (${code})`); }
+  else document.getElementById('lerr').textContent='코드가 올바르지 않습니다.';
+}
+function loginAgency(){
+  const code=document.getElementById('l-ac').value.trim();
+  if(code===(cfg().agencyCode||'교육청2026')){ role='agency'; visIds=SCHOOLS.map(s=>s.id); startApp('발주청 (교육청)'); }
+  else document.getElementById('lerr').textContent='코드가 올바르지 않습니다.';
+}
+function loginAdmin(){
+  const pw=document.getElementById('l-ap').value.trim();
+  if(pw===(cfg().adminPw||'admin1234')){ role='admin'; visIds=SCHOOLS.map(s=>s.id); startApp('관리자'); }
+  else document.getElementById('lerr').textContent='비밀번호가 틀렸습니다.';
+}
+
+function startApp(label){
+  document.getElementById('screen-login').style.display='none';
+  document.getElementById('screen-app').style.display='flex';
+  document.getElementById('tu').textContent=label;
+  if(role==='admin') document.getElementById('mi-admin').style.display='flex';
+  if(role==='agency'||role==='admin'){ document.getElementById('ag-tabs').style.display='block'; switchAgTab('bulk'); }
+  if(role==='school'){
+    document.getElementById('school-info-box').style.display='block';
+    document.getElementById('panel-bulk').style.display='none';
+    document.getElementById('panel-school').style.display='block';
+  }
+  buildSchoolTabs(); buildSidebar(); loadAdminForm(); updatePaBanner();
+  const my=SCHOOLS.filter(s=>visIds.includes(s.id));
+  document.getElementById('up-sub').textContent = role==='school'
+    ? my.map(s=>sLabel(s)).join(' · ')
+    : `전체 ${SCHOOLS.length}개동 (${role==='agency'?'발주청':'관리자'} 모드)`;
+  // 학교: 탭이 1개면 자동 선택, 여러 개면 탭 표시
+  if(role==='school'){
+    if(my.length===1){
+      document.getElementById('school-tabs-card').style.display='none';
+      selectSchool(my[0].id);
+    } else {
+      document.getElementById('school-tabs-card').style.display='block';
+    }
+  }
+}
+
+function logout(){
+  document.getElementById('screen-login').style.display='flex';
+  document.getElementById('screen-app').style.display='none';
+  role='school'; visIds=[]; curSchoolId=null; schoolFiles=[]; bulkFiles=[];
+  document.getElementById('mi-admin').style.display='none';
+  document.getElementById('ag-tabs').style.display='none';
+  document.getElementById('school-info-box').style.display='none';
+  document.getElementById('sel-panel').style.display='none';
+  document.getElementById('panel-bulk').style.display='none';
+  document.getElementById('panel-school').style.display='block';
+}
+
+// ════════════════════════════════════
+// PA BANNER
+// ════════════════════════════════════
+function updatePaBanner(){
+  const url=(cfg().paUrl||'').trim();
+  const b=document.getElementById('pa-banner');
+  if(url){ b.className='pa-banner ok'; b.textContent='✅ Power Automate 연결됨 — 업로드 준비 완료'; }
+  else   { b.className='pa-banner warn'; b.innerHTML='⚠️ Power Automate URL 미설정 — <a href="#" onclick="showScreen(\'admin\')" style="color:var(--amber);font-weight:700;text-decoration:underline">관리자 설정</a>에서 입력해주세요.'; }
+}
+
+// ════════════════════════════════════
+// SCHOOL TABS
+// ════════════════════════════════════
+function buildSchoolTabs(){
+  const my=SCHOOLS.filter(s=>visIds.includes(s.id));
+  const regions=[...new Set(my.map(s=>s.region))].sort();
+  document.getElementById('stabs-body').innerHTML=regions.map(r=>{
+    const list=my.filter(s=>s.region===r);
+    return `<div style="margin-bottom:8px"><div class="rlbl">${r}</div><div class="stabs">
+      ${list.map(s=>`<button class="stab" id="stab-${s.id}" onclick="selectSchool(${s.id})">${sLabel(s)}${s.type==='사립'?' 🔴':''}</button>`).join('')}
+    </div></div>`;
+  }).join('');
+}
+
+function buildSidebar(){
+  const cl=getCL();
+  const my=SCHOOLS.filter(s=>visIds.includes(s.id));
+  document.getElementById('sb-schools').innerHTML=my.map(s=>{
+    const {ok,total}=getStatus(s.id,cl);
+    const cls=ok===total&&total>0?'ok':ok>0?'part':'no';
+    return `<div class="s-item" onclick="selectSchool(${s.id});showScreen('upload')">
+      <span style="opacity:.45;font-size:10px;flex-shrink:0">${String(s.disp).padStart(2,'0')}</span>
+      <span class="sname">${s.school} ${s.building}</span>
+      <span class="sbadge ${cls}">${ok}/${total}</span></div>`;
+  }).join('');
+}
+
+function selectSchool(id){
+  curSchoolId=id;
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  const tab=document.getElementById('stab-'+id); if(tab) tab.classList.add('active');
+  document.getElementById('sel-panel').style.display='block';
+  const s=SCHOOLS.find(x=>x.id===id);
+  document.getElementById('sel-label').textContent='— '+sLabel(s);
+  buildChecklist(id); schoolFiles=[]; renderSchoolFiles();
+  document.getElementById('btn-school-up').disabled=true;
+}
+
+// ════════════════════════════════════
+// SCHOOL UPLOAD
+// ════════════════════════════════════
+const dz_s=document.getElementById('dz-school');
+dz_s.addEventListener('dragover',e=>{e.preventDefault();dz_s.classList.add('over')});
+dz_s.addEventListener('dragleave',()=>dz_s.classList.remove('over'));
+dz_s.addEventListener('drop',async e=>{e.preventDefault();dz_s.classList.remove('over');addSchoolFiles(await getDroppedFiles(e))});
+document.getElementById('fi-school').addEventListener('change',e=>{addSchoolFiles(e.target.files);e.target.value=''});
+document.getElementById('fi-school-dir').addEventListener('change',e=>{addSchoolFiles(e.target.files);e.target.value=''});
+
+function addSchoolFiles(fl){
+  Array.from(fl).forEach(f=>{
+    if(!schoolFiles.find(x=>x.name===f.name&&x.size===f.size)){
+      f._folder=detectFolderSmart(f); f._year=extractYear(f.name); schoolFiles.push(f);
+    }
+  });
+  renderSchoolFiles();
+  document.getElementById('btn-school-up').disabled=schoolFiles.length===0;
+}
+
+function renderSchoolFiles(){
+  document.getElementById('flist-school').innerHTML=schoolFiles.map((f,i)=>{
+    const warn=f.size>75*1024*1024?`<span class="fpill fpill-err">⚠️ 75MB 초과</span>`:'';
+    return `<div class="fitem">
+      <span class="fitem-ico">${FICONS[ext(f.name)]||'📁'}</span>
+      <div class="fitem-info">
+        <div class="fitem-name">${f.name}</div>
+        <div class="fitem-meta">
+          <span class="fpill fpill-folder">→ ${f._folder}</span>
+          ${f._year?`<span class="fpill fpill-ok">${f._year}년</span>`:''}
+          <span style="font-size:11px;color:var(--gray)">${fmtSz(f.size)}</span>
+          ${warn}
+        </div>
+      </div>
+      <button class="fremove" onclick="removeSchoolFile(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+function removeSchoolFile(i){
+  schoolFiles.splice(i,1); renderSchoolFiles();
+  document.getElementById('btn-school-up').disabled=schoolFiles.length===0;
+}
+
+async function doSchoolUpload(){
+  if(!curSchoolId||!schoolFiles.length) return;
+  const paUrl=(cfg().paUrl||'').trim();
+  if(!paUrl){ toast('Power Automate URL을 먼저 설정해주세요','error'); return; }
+  const s=SCHOOLS.find(x=>x.id===curSchoolId);
+  const base=(cfg().basePath||'').replace(/\/$/,'');
+  const schoolFolder=`${base?base+'/':''}07. 학교별 평가표/${sLabel(s)}`;
+  const btn=document.getElementById('btn-school-up');
+  btn.disabled=true;
+  let done=0, errors=[];
+  for(const f of schoolFiles){
+    setPg('school',f.name,Math.round(done/schoolFiles.length*100));
+    try{
+      await uploadViaPA(paUrl,f,`${schoolFolder}/${f._folder}/${f.name}`);
+      updateCLfromFile(curSchoolId,f);
+    }catch(e){ errors.push(`${f.name}: ${e instanceof Error?e.message:String(e)}`); }
+    done++;
+  }
+  setPg('school','완료',100);
+  setTimeout(()=>{ document.getElementById('pg-school').classList.remove('on'); document.getElementById('pg-school-f').style.width='0'; },2500);
+  if(errors.length) toast(`${errors.length}개 실패: ${errors[0]}`,'error');
+  else toast(`${schoolFiles.length}개 파일 업로드 완료!`,'success');
+  schoolFiles=[]; renderSchoolFiles(); buildChecklist(curSchoolId); buildSidebar();
+  btn.disabled=false;
+}
+
+// ════════════════════════════════════
+// BULK UPLOAD
+// ════════════════════════════════════
+function switchAgTab(tab){
+  document.getElementById('panel-bulk').style.display=tab==='bulk'?'block':'none';
+  document.getElementById('panel-school').style.display=tab==='manual'?'block':'none';
+  document.getElementById('agtab-bulk').className=tab==='bulk'?'btn btn-p btn-sm':'btn btn-o btn-sm';
+  document.getElementById('agtab-manual').className=tab==='manual'?'btn btn-p btn-sm':'btn btn-o btn-sm';
+}
+
+const dz_b=document.getElementById('dz-bulk');
+dz_b.addEventListener('dragover',e=>{e.preventDefault();dz_b.classList.add('over')});
+dz_b.addEventListener('dragleave',()=>dz_b.classList.remove('over'));
+dz_b.addEventListener('drop',async e=>{e.preventDefault();dz_b.classList.remove('over');addBulkFiles(await getDroppedFiles(e))});
+document.getElementById('fi-bulk').addEventListener('change',e=>{addBulkFiles(e.target.files);e.target.value=''});
+document.getElementById('fi-bulk-dir').addEventListener('change',e=>{addBulkFiles(e.target.files);e.target.value=''});
+
+function addBulkFiles(fl){
+  Array.from(fl).forEach(f=>{
+    if(!bulkFiles.find(x=>x.name===f.name&&x.size===f.size)){
+      f._folder=detectFolderSmart(f); f._year=extractYear(f.name);
+      const det=detectSchool(f.name);
+      f._sid=det.id; f._ambig=det.ambig; bulkFiles.push(f);
+    }
+  });
+  renderBulkTable();
+}
+
+function renderBulkTable(){
+  if(!bulkFiles.length){ document.getElementById('rt-wrap').style.display='none'; return; }
+  document.getElementById('rt-wrap').style.display='block';
+  const matched=bulkFiles.filter(f=>f._sid).length;
+  document.getElementById('rt-summary').textContent=`총 ${bulkFiles.length}개 · 자동감지 ${matched}개 · 미감지 ${bulkFiles.length-matched}개`;
+  const visSchools=SCHOOLS.filter(s=>visIds.includes(s.id));
+  const opts=visSchools.map(s=>`<option value="${s.id}">${sLabel(s)}</option>`).join('');
+  document.getElementById('rt-tbody').innerHTML=bulkFiles.map((f,i)=>{
+    const icon=FICONS[ext(f.name)]||'📁';
+    const sel=f._sid
+      ?`<select class="rt-sel" onchange="setBulkSid(${i},this.value)">${visSchools.map(s=>`<option value="${s.id}"${s.id===f._sid?' selected':''}>${sLabel(s)}</option>`).join('')}</select>${f._ambig?'<span style="font-size:10px;color:var(--amber)"> ⚠️복수</span>':''}`
+      :`<select class="rt-sel" style="border-color:var(--amber)" onchange="setBulkSid(${i},this.value)"><option value="">⚠️ 건물동 선택 필요</option>${opts}</select>`;
+    return `<tr>
+      <td style="color:var(--gray);font-size:11px">${i+1}</td>
+      <td>${icon} ${f.name}<br><span style="font-size:11px;color:var(--gray)">${fmtSz(f.size)}</span></td>
+      <td>${sel}</td>
+      <td style="font-size:11px;color:var(--gray)">${f._folder}</td>
+      <td style="font-size:11px;color:var(--gray)">${fmtSz(f.size)}</td>
+      <td><button class="fremove" onclick="removeBulk(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+function setBulkSid(i,v){ bulkFiles[i]._sid=v?parseInt(v):null; }
+function removeBulk(i){ bulkFiles.splice(i,1); renderBulkTable(); }
+
+async function doBulkUpload(){
+  const paUrl=(cfg().paUrl||'').trim();
+  if(!paUrl){ toast('Power Automate URL을 먼저 설정해주세요','error'); return; }
+  const unassigned=bulkFiles.filter(f=>!f._sid);
+  if(unassigned.length){ toast(`${unassigned.length}개 파일에 학교를 지정해주세요`,'error'); return; }
+  document.getElementById('btn-bulk').disabled=true;
+  const base=(cfg().basePath||'').replace(/\/$/,'');
+  let done=0, errors=[];
+  for(const f of bulkFiles){
+    const s=SCHOOLS.find(x=>x.id===f._sid);
+    const path=`${base?base+'/':''}07. 학교별 평가표/${sLabel(s)}/${f._folder}/${f.name}`;
+    setPg('bulk',`[${s.school}] ${f.name}`,Math.round(done/bulkFiles.length*100));
+    try{
+      await uploadViaPA(paUrl,f,path);
+      updateCLfromFile(f._sid,f);
+    }catch(e){ errors.push(`${f.name}: ${e instanceof Error?e.message:String(e)}`); }
+    done++;
+  }
+  setPg('bulk','완료',100);
+  setTimeout(()=>{ document.getElementById('pg-bulk').classList.remove('on'); document.getElementById('pg-bulk-f').style.width='0'; },2500);
+  if(errors.length) toast(`${errors.length}개 실패`,'error');
+  else toast(`${bulkFiles.length}개 파일 일괄 업로드 완료!`,'success');
+  bulkFiles=[]; renderBulkTable(); buildSidebar();
+  document.getElementById('btn-bulk').disabled=false;
+}
+
+// ════════════════════════════════════
+// POWER AUTOMATE UPLOAD
+// ════════════════════════════════════
+async function uploadViaPA(paUrl, file, fullPath){
+  const parts=fullPath.split('/');
+  const fileName=parts.pop();
+  const folderPath=parts.join('/');
+  const b64=await fileToBase64(file);
+  const res=await fetch(paUrl,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fileName, folderPath, fileContent:b64}),
+  });
+  if(!res.ok){
+    const txt=await res.text().catch(()=>'');
+    throw new Error(`오류 ${res.status}${txt?' — '+txt.slice(0,60):''}`);
+  }
+}
+
+async function testPaConnection(){
+  const url=(document.getElementById('a-paurl').value||'').trim();
+  if(!url){ toast('URL을 먼저 입력하세요','error'); return; }
+  try{
+    toast('연결 테스트 중…','info');
+    const res=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({fileName:'test_connection.txt',folderPath:'_test',fileContent:btoa('test')}),
+    });
+    if(res.ok) toast('✅ 연결 성공!','success');
+    else toast(`응답 ${res.status} — Power Automate 흐름을 확인하세요`,'error');
+  }catch(e){
+    if(e.message.includes('Failed to fetch')||e.message.includes('CORS'))
+      toast('CORS 오류 — HTML을 SharePoint에 업로드하거나 로컬 서버에서 실행하세요','error');
+    else toast('연결 실패: '+e.message,'error');
+  }
+}
+
+// ════════════════════════════════════
+// CHECKLIST
+// ════════════════════════════════════
+function updateCLfromFile(sid,f){
+  const l=f.name.toLowerCase().replace(/\s/g,'');
+  CHECKLIST.forEach(item=>{
+    for(const k of item.kw){
+      if(l.includes(k)){ setCLv(sid,item.key,item.cat==='struct'?(f._year||'O'):'O'); break; }
+    }
+  });
+}
+
+// 완료 기준: school → schoolReq만 / agency·admin → req:true 항목 + c3그룹
+function getStatus(sid,cl){
+  const d=cl[sid]||{};
+  const s=SCHOOLS.find(x=>x.id===sid);
+  let ok=0, total=0;
+  if(role==='school'){
+    CHECKLIST.forEach(i=>{
+      if(!i.schoolReq) return;
+      total++;
+      if(i.priv&&s?.type==='사립'){ ok++; return; }
+      const v=d[i.key]; if(v&&v!=='X') ok++;
+    });
+  } else {
+    // Required 단일 항목 (c3 그룹 제외)
+    CHECKLIST.forEach(i=>{
+      if(!i.req||i.sg==='c3') return;
+      total++;
+      if(i.priv&&s?.type==='사립'){ ok++; return; }
+      const v=d[i.key]; if(v&&v!=='X') ok++;
+    });
+    // 구조보고서 그룹: 3종/정밀점검/정밀진단 중 1개면 OK
+    const c3Any=CHECKLIST.filter(i=>i.sg==='c3').some(i=>{ const v=d[i.key]; return v&&v!=='X'; });
+    total++; if(c3Any) ok++;
+    // req:true but not c3 (already handled above) => also seismic, maint
+    // seismic and maint: req:true and uploader:'school' — already counted above ✓
+  }
+  return {ok,total};
+}
+
+const CAT_CLS={common:'tc',func:'tf',struct:'ts',econ:'te'};
+
+function buildChecklist(sid){
+  const s=SCHOOLS.find(x=>x.id===sid);
+  const d=getCL()[sid]||{};
+  const c3Any=CHECKLIST.filter(i=>i.sg==='c3').some(i=>{ const v=d[i.key]; return v&&v!=='X'; });
+
+  const row=(item,dimmed=false)=>{
+    let dv,dc,note='';
+    const raw=d[item.key];
+    if(item.priv&&s?.type==='사립'){dv='미존재';dc='vna';note='사립학교 — 공유재산 미존재';}
+    else if(!raw||raw==='X'){
+      dv='X';dc='vx';
+      if(item.sg==='c3'&&c3Any) note='타 구조보고서 확보됨';
+    }else if(raw==='O'){dv='O';dc='vo';}
+    else{dv=raw;dc='vyr';note='시행연도';}
+    const badge=item.schoolReq?'<span style="font-size:10px;color:var(--red);margin-left:3px">필수</span>'
+               :item.schoolOpt?'<span style="font-size:10px;color:var(--blue);margin-left:3px">선택</span>':'';
+    return `<tr${dimmed?' class="dim"':''}>
+      <td>${item.label}${role==='school'?badge:''}</td>
+      <td><span class="tag ${CAT_CLS[item.cat]||''}">${item.cl}</span></td>
+      <td style="text-align:center"><span class="${dc}" style="font-size:14px">${dv}</span></td>
+      <td style="font-size:11px;color:var(--gray)">${note}</td>
+    </tr>`;
+  };
+
+  const tbl=rows=>`<table class="cl-tbl"><thead><tr><th>자료명</th><th>분야</th><th style="text-align:center;width:48px">수신</th><th>비고</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+  const {ok,total}=getStatus(sid,getCL());
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <span style="font-size:12px;font-weight:600">${sLabel(s)}</span>
+    <span style="font-size:13px;font-weight:700;color:${ok===total?'var(--green)':'var(--amber)'}">${ok}/${total} 완료</span>
+  </div>`;
+
+  if(role==='school'){
+    html+=`<div class="cl-section">
+      <div class="cl-sec-hd req">📋 학교 제출 — 필수 (${CHECKLIST.filter(i=>i.schoolReq).length}건)</div>
+      ${tbl(CHECKLIST.filter(i=>i.schoolReq).map(i=>row(i)).join(''))}
+    </div>
+    <div class="cl-section">
+      <div class="cl-sec-hd opt">○ 학교 제출 — 선택 <span style="font-size:10px;font-weight:400">(구조: 3종·정밀점검·정밀진단 중 1개 이상)</span></div>
+      ${tbl(CHECKLIST.filter(i=>i.schoolOpt).map(i=>row(i)).join(''))}
+    </div>
+    <div class="cl-section">
+      <div class="cl-sec-hd ag">🏛️ 발주청 제출 현황 (참고용)</div>
+      ${tbl(CHECKLIST.filter(i=>i.uploader==='agency').map(i=>row(i,true)).join(''))}
+    </div>`;
+  } else {
+    html+=`<div style="font-size:11px;background:var(--amber-l);padding:6px 9px;border-radius:6px;margin-bottom:8px;color:var(--amber)">
+      ⚠️ 구조분야: 3종시설물·정밀점검·정밀진단 중 <strong>1개 이상</strong>이면 충족
+    </div>${tbl(CHECKLIST.map(i=>row(i)).join(''))}`;
+  }
+  document.getElementById('cl-panel').innerHTML=html;
+}
+
+function refreshCL(){ if(curSchoolId) buildChecklist(curSchoolId); }
+
+// ════════════════════════════════════
+// STATUS SCREEN
+// ════════════════════════════════════
+function buildStatusScreen(){
+  const cl=getCL();
+  const my=SCHOOLS.filter(s=>visIds.includes(s.id));
+  let completeCnt=0, totalOk=0;
+  my.forEach(s=>{ const {ok,total}=getStatus(s.id,cl); if(ok===total&&total>0) completeCnt++; totalOk+=ok; });
+
+  document.getElementById('stat-grid').innerHTML=`
+    <div class="scard"><div class="slabel">대상동 수</div><div class="sval b">${my.length}</div></div>
+    <div class="scard"><div class="slabel">수신 완료동</div><div class="sval g">${completeCnt}</div></div>
+    <div class="scard"><div class="slabel">미완료동</div><div class="sval r">${my.length-completeCnt}</div></div>
+    <div class="scard"><div class="slabel">수신된 항목</div><div class="sval a">${totalOk}</div></div>`;
+
+  // ── Overview table ──
+  // Columns: school-name, region, [checklist items...], 완료율
+  // 구조보고서 그룹을 1열로 합침
+  const cols=[
+    {key:'overview', label:'학교별 개요',   cat:'cat-c', tip:'공통'},
+    {key:'drawing',  label:'도면',           cat:'cat-c', tip:'공통'},
+    {key:'building', label:'건축물 대장',    cat:'cat-c', tip:'공통'},
+    {key:'public',   label:'공유재산 관리대장', cat:'cat-c', tip:'공통'},
+    {key:'student',  label:'중장기 학생 배치계획', cat:'cat-f', tip:'기능/성능'},
+    {key:'standard', label:'학교급별 시설기준',  cat:'cat-f', tip:'기능/성능'},
+    {key:'c3',       label:'구조보고서 (3종·정밀점검·진단)', cat:'cat-s', tip:'구조 (1종이상)', isGroup:true},
+    {key:'seismic',  label:'내진성능 평가보고서', cat:'cat-s', tip:'구조'},
+    {key:'maint',    label:'유지보수이력 (10년)', cat:'cat-e', tip:'경제성'},
+    {key:'realmap',  label:'실배치도',       cat:'cat-c', tip:'공통'},
+    {key:'interview',label:'사전인터뷰 자료', cat:'cat-c', tip:'공통'},
+  ];
+
+  // group categories for colspan header
+  const catGroups=[];
+  let prevCat=null, cnt=0;
+  cols.forEach((c,i)=>{
+    if(c.cat!==prevCat){
+      if(prevCat) catGroups.push({cat:prevCat,count:cnt});
+      prevCat=c.cat; cnt=1;
+    } else cnt++;
+    if(i===cols.length-1) catGroups.push({cat:prevCat,count:cnt});
+  });
+
+  const catLabel={'cat-c':'공통','cat-f':'기능/성능','cat-s':'구조','cat-e':'경제성'};
+
+  let hdr1=`<tr>
+    <th class="cat-h" rowspan="2" style="text-align:left;padding:6px 10px;min-width:140px;position:sticky;left:0;z-index:3">대상교</th>
+    <th class="cat-h" rowspan="2" style="min-width:48px">권역</th>`;
+  catGroups.forEach(g=>hdr1+=`<th class="${g.cat}" colspan="${g.count}" style="padding:5px 4px">${catLabel[g.cat]}</th>`);
+  hdr1+=`<th class="cat-h" rowspan="2" style="min-width:60px">완료율</th></tr>`;
+
+  let hdr2='<tr>';
+  cols.forEach(c=>`${c}` && (hdr2+=`<th class="vhdr ${c.cat}" title="${c.tip}"><span class="vt">${c.label}</span></th>`));
+  hdr2+='</tr>';
+
+  let tbody='';
+  my.forEach(s=>{
+    const d=cl[s.id]||{};
+    const c3Any=CHECKLIST.filter(i=>i.sg==='c3').some(i=>{ const v=d[i.key]; return v&&v!=='X'; });
+    const st=getStatus(s.id,cl);
+
+    let row=`<tr>
+      <td class="sname" style="position:sticky;left:0;z-index:1;background:#fff">${sLabel(s)}</td>
+      <td class="reg">${s.region}</td>`;
+
+    cols.forEach(col=>{
+      if(col.isGroup){
+        row+=c3Any?`<td class="ovt-o">O</td>`:`<td class="ovt-x">X</td>`;
+      } else {
+        const item=CHECKLIST.find(x=>x.key===col.key);
+        const v=d[col.key];
+        if(item?.priv&&s.type==='사립'){
+          row+=`<td class="ovt-na">미존재</td>`;
+        } else if(!v||v==='X'){
+          row+=`<td class="ovt-x">X</td>`;
+        } else if(v==='O'){
+          row+=`<td class="ovt-o">O</td>`;
+        } else {
+          row+=`<td class="ovt-yr">${v}</td>`;
+        }
+      }
+    });
+
+    const pct=st.total>0?Math.round(st.ok/st.total*100):0;
+    const cls=pct===100?'pct-ok':pct>=50?'pct-half':'pct-low';
+    row+=`<td class="${cls}">${st.ok}/${st.total}<br>${pct}%</td></tr>`;
+    tbody+=row;
+  });
+
+  document.getElementById('ov-wrap').innerHTML=
+    `<table class="ovt"><thead>${hdr1}${hdr2}</thead><tbody>${tbody}</tbody></table>`;
+}
+
+// ════════════════════════════════════
+// EXCEL EXPORT
+// ════════════════════════════════════
+function exportExcel(){
+  const cl=getCL();
+  const my=SCHOOLS.filter(s=>visIds.includes(s.id));
+  const wb=XLSX.utils.book_new();
+  const h1=[null,'권역','지역','유형','학교명','건물동명','공통',null,null,null,'기능/성능',null,'구조',null,null,null,null,null,null,null,'경제성',null,'비고'];
+  const h2=[null,null,null,null,null,null,'학교별개요','도면','건축물대장','공유재산관리대장','중장기학생배치','학교급별시설기준','3종시설물',null,'정밀점검',null,'정밀진단',null,'내진성능평가',null,'유지보수이력','실배치도','사전인터뷰'];
+  const h3=[null,null,null,null,null,null,null,null,null,null,null,null,'시행연도','등급','시행연도','등급','시행연도','등급','시행연도','확보유무',null,null,null];
+  const data=[h1,h2,h3];
+  my.forEach((s,i)=>{
+    const d=cl[s.id]||{};
+    const g=key=>{ if(CHECKLIST.find(x=>x.key===key)?.priv&&s.type==='사립') return '사립학교미존재'; return d[key]||'X'; };
+    const yr=key=>{ const v=d[key]; if(!v||v==='X') return 'X'; if(/^20\d{2}$/.test(v)) return v; return 'O'; };
+    data.push([i+1,s.region,s.area,s.type,s.school,s.building,
+      g('overview'),g('drawing'),g('building'),g('public'),g('student'),g('standard'),
+      yr('type3'),'',yr('detail'),'',yr('precise'),'',yr('seismic'),g('seismic'),
+      g('maint'),g('realmap'),g('interview')]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[{wch:4},{wch:8},{wch:10},{wch:5},{wch:10},{wch:14},...Array(17).fill({wch:9})];
+  XLSX.utils.book_append_sheet(wb,ws,'기초자료 체크리스트');
+  XLSX.writeFile(wb,`기초자료_수신현황_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Excel 다운로드 완료','success');
+}
+
+// ════════════════════════════════════
+// ADMIN
+// ════════════════════════════════════
+function loadAdminForm(){
+  if(role!=='admin') return;
+  const c=cfg();
+  document.getElementById('a-paurl').value=c.paUrl||'';
+  document.getElementById('a-basepath').value=c.basePath||'';
+  document.getElementById('a-agc').value=c.agencyCode||'교육청2026';
+}
+function savePaConfig(){
+  saveCfg({paUrl:document.getElementById('a-paurl').value.trim(),basePath:document.getElementById('a-basepath').value.trim()});
+  updatePaBanner(); toast('설정 저장됨','success');
+}
+function saveCodes(){
+  const ag=document.getElementById('a-agc').value.trim();
+  const pw=document.getElementById('a-adp').value.trim();
+  if(ag) saveCfg({agencyCode:ag});
+  if(pw) saveCfg({adminPw:pw});
+  toast('저장됨','success');
+}
+function buildCodeTable(){
+  const codes=getSchoolCodes();
+  const idToCode={};
+  Object.entries(codes).forEach(([c,ids])=>ids.forEach(id=>{ if(!idToCode[id]) idToCode[id]=c; }));
+  document.getElementById('ctbl-body').innerHTML=SCHOOLS.map(s=>`
+    <tr>
+      <td>${String(s.disp).padStart(2,'0')}</td>
+      <td style="font-weight:600">${s.school}</td>
+      <td>${s.building}</td>
+      <td style="color:${s.type==='사립'?'var(--red)':'inherit'}">${s.type}</td>
+      <td><input id="sc-${s.id}" value="${idToCode[s.id]||''}" placeholder="코드 없음"/></td>
+    </tr>`).join('');
+}
+function saveSchoolCodes(){
+  const nc={};
+  SCHOOLS.forEach(s=>{
+    const v=document.getElementById('sc-'+s.id)?.value.trim();
+    if(v){ if(!nc[v]) nc[v]=[]; nc[v].push(s.id); }
+  });
+  saveCfg({schoolCodes:nc}); toast('학교 코드 저장됨','success');
+}
+function confirmReset(){
+  document.getElementById('m-title').textContent='체크리스트 초기화';
+  document.getElementById('m-body').textContent='모든 수신 현황이 초기화됩니다. SharePoint 파일은 유지됩니다.';
+  document.getElementById('m-ok').onclick=()=>{ localStorage.removeItem('bzCL'); closeModal(); toast('초기화 완료','info'); buildSidebar(); };
+  document.getElementById('mbg').classList.add('open');
+}
+function closeModal(){ document.getElementById('mbg').classList.remove('open'); }
+
+// ════════════════════════════════════
+// NAV / UTILS
+// ════════════════════════════════════
+function showScreen(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+n).classList.add('active');
+  document.querySelectorAll('.s-item[id^="mi-"]').forEach(s=>s.classList.remove('active'));
+  const mi=document.getElementById('mi-'+n); if(mi) mi.classList.add('active');
+  if(n==='status') buildStatusScreen();
+  if(n==='admin')  buildCodeTable();
+}
+function setPg(which,text,pct){
+  document.getElementById('pg-'+which).classList.add('on');
+  document.getElementById('pg-'+which+'-t').textContent=text;
+  document.getElementById('pg-'+which+'-p').textContent=pct+'%';
+  document.getElementById('pg-'+which+'-f').style.width=pct+'%';
+}
+function toast(msg,type='info'){
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=(type==='success'?'✅':type==='error'?'❌':'ℹ️')+' '+msg;
+  document.getElementById('twrap').appendChild(el);
+  setTimeout(()=>el.remove(),4000);
+}
+</script>
+</body>
+</html>
