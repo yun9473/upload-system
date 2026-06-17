@@ -757,8 +757,9 @@ function loginAdmin(){
   role='admin'; visIds=SCHOOLS.map(s=>s.id); startApp('관리자');
 }
 
-function startApp(label){
+async function startApp(label){
   localStorage.setItem('bzSession', JSON.stringify({role, visIds, label}));
+  await loadServerConfig();
   document.getElementById('screen-login').style.display='none';
   document.getElementById('screen-app').style.display='flex';
   document.getElementById('tu').textContent=label;
@@ -803,6 +804,17 @@ function logout(){
 // ════════════════════════════════════
 // PA BANNER
 // ════════════════════════════════════
+// 서버 공유 설정 로드 (관리자가 Vercel 환경변수에 설정하면 전체 공유)
+async function loadServerConfig(){
+  try{
+    const res = await fetch('/api/config');
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data.paUrl)    saveCfg({paUrl: data.paUrl});
+    if(data.basePath) saveCfg({basePath: data.basePath});
+  }catch(e){}
+}
+
 function updatePaBanner(){
   const url=(cfg().paUrl||'').trim();
   const b=document.getElementById('pa-banner');
