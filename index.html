@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>기초자료 수신 관리 시스템</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -659,6 +660,46 @@ function detectFolderSmart(file){
   return detectFolder(file.name);
 }
 
+// ════════════════════════════════════
+// ZIP 해제
+// ════════════════════════════════════
+async function extractZip(zipFile){
+  const zip = await JSZip.loadAsync(zipFile);
+  const result = [];
+  for(const [path, entry] of Object.entries(zip.files)){
+    if(entry.dir) continue;
+    const parts = path.split('/');
+    const name = parts.pop();
+    if(!name || name.startsWith('.') || name.startsWith('__MACOSX')) continue;
+    const blob = await entry.async('blob');
+    const f = new File([blob], name, {type: blob.type||''});
+    // ZIP 내 폴더 구조를 dropFolder로 활용
+    f._dropFolder = parts.length ? parts[0] : null;
+    f._fromZip = zipFile.name;
+    result.push(f);
+  }
+  return result;
+}
+
+async function expandFiles(fileList){
+  const result = [];
+  for(const f of Array.from(fileList)){
+    if(ext(f.name) === 'zip'){
+      try{
+        const extracted = await extractZip(f);
+        result.push(...extracted);
+        toast(`📦 ${f.name} 압축 해제 → ${extracted.length}개 파일`, 'info');
+      }catch(e){
+        toast(`⚠️ ${f.name} 해제 실패, 원본으로 추가`, 'info');
+        result.push(f);
+      }
+    } else {
+      result.push(f);
+    }
+  }
+  return result;
+}
+
 function fileToBase64(file){
   return new Promise((res,rej)=>{
     const r=new FileReader();
@@ -803,8 +844,9 @@ dz_s.addEventListener('drop',async e=>{e.preventDefault();dz_s.classList.remove(
 document.getElementById('fi-school').addEventListener('change',e=>{addSchoolFiles(e.target.files);e.target.value=''});
 document.getElementById('fi-school-dir').addEventListener('change',e=>{addSchoolFiles(e.target.files);e.target.value=''});
 
-function addSchoolFiles(fl){
-  Array.from(fl).forEach(f=>{
+async function addSchoolFiles(fl){
+  const expanded = await expandFiles(fl);
+  expanded.forEach(f=>{
     if(!schoolFiles.find(x=>x.name===f.name&&x.size===f.size)){
       f._folder=detectFolderSmart(f); f._year=extractYear(f.name); schoolFiles.push(f);
     }
@@ -879,8 +921,9 @@ dz_b.addEventListener('drop',async e=>{e.preventDefault();dz_b.classList.remove(
 document.getElementById('fi-bulk').addEventListener('change',e=>{addBulkFiles(e.target.files);e.target.value=''});
 document.getElementById('fi-bulk-dir').addEventListener('change',e=>{addBulkFiles(e.target.files);e.target.value=''});
 
-function addBulkFiles(fl){
-  Array.from(fl).forEach(f=>{
+async function addBulkFiles(fl){
+  const expanded = await expandFiles(fl);
+  expanded.forEach(f=>{
     if(!bulkFiles.find(x=>x.name===f.name&&x.size===f.size)){
       f._folder=detectFolderSmart(f); f._year=extractYear(f.name);
       const det=detectSchool(f.name);
