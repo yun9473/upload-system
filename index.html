@@ -272,7 +272,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
             <div style="font-size:19px;font-weight:700">파일 업로드</div>
             <div style="font-size:13px;color:var(--gray);margin-top:2px" id="up-sub"></div>
           </div>
-          <button class="btn btn-o btn-sm" onclick="exportExcel()">📥 체크리스트 Excel</button>
+          <button class="btn btn-o btn-sm" onclick="exportExcel()" id="btn-excel-upload" style="display:none">📥 체크리스트 Excel</button>
         </div>
 
         <div id="pa-banner" class="pa-banner warn">⚠️ Power Automate URL 미설정</div>
@@ -769,6 +769,7 @@ function startApp(label){
     document.getElementById('panel-bulk').style.display='none';
     document.getElementById('panel-school').style.display='block';
   }
+  document.getElementById('btn-excel-upload').style.display=(role==='school')?'none':'inline-flex';
   buildSchoolTabs(); buildSidebar(); loadAdminForm(); updatePaBanner();
   const my=SCHOOLS.filter(s=>visIds.includes(s.id));
   document.getElementById('up-sub').textContent = role==='school'
