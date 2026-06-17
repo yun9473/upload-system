@@ -949,14 +949,14 @@ async function uploadViaPA(paUrl, file, fullPath){
   const fileName=parts.pop();
   const folderPath=parts.join('/');
   const b64=await fileToBase64(file);
-  const res=await fetch(paUrl,{
+  const res=await fetch('/api/proxy',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({fileName, folderPath, fileContent:b64}),
+    body:JSON.stringify({paUrl, fileName, folderPath, fileContent:b64}),
   });
   if(!res.ok){
-    const txt=await res.text().catch(()=>'');
-    throw new Error(`오류 ${res.status}${txt?' — '+txt.slice(0,60):''}`);
+    const txt=await res.json().catch(()=>({}));
+    throw new Error(`오류 ${res.status}${txt.error?' — '+txt.error:''}`) ;
   }
 }
 
