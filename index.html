@@ -6,6 +6,7 @@
 <title>기초자료 수신 관리 시스템</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -313,7 +314,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
               </div>
               <div style="overflow-x:auto;margin-bottom:12px">
                 <table class="rt-tbl">
-                  <thead><tr><th style="width:28px">#</th><th>파일명</th><th style="width:200px">학교</th><th style="width:190px">저장 폴더</th><th style="width:65px">크기</th><th style="width:28px"></th></tr></thead>
+                  <thead><tr><th style="width:28px">#</th><th>파일명</th><th style="width:200px">학교</th><th style="width:190px">저장 폴더</th><th style="width:90px">점검정보</th><th style="width:65px">크기</th><th style="width:28px"></th></tr></thead>
                   <tbody id="rt-tbody"></tbody>
                 </table>
               </div>
@@ -596,6 +597,66 @@ const setCLv = (sid,key,val) => {
 const getSchoolCodes = () => cfg().schoolCodes || DEFAULT_CODES;
 
 // ════════════════════════════════════
+// INSPECTION INFO EXTRACTION
+// ════════════════════════════════════
+(function initPdfJs(){
+  if(typeof pdfjsLib !== 'undefined')
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+})();
+
+function detectInspType(fname){
+  if(/정기안전점검|3종시설물|3종점검|정기점검/.test(fname)) return 'type3';
+  if(/정밀안전진단|정밀진단/.test(fname)) return 'precise';
+  if(/정밀안전점검|정밀점검/.test(fname)) return 'detail';
+  return null;
+}
+
+async function extractPdfText(file, maxPages=10){
+  try{
+    if(typeof pdfjsLib === 'undefined') return '';
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: new Uint8Array(buf)}).promise;
+    let text = '';
+    const pages = Math.min(pdf.numPages, maxPages);
+    for(let i=1; i<=pages; i++){
+      const pg = await pdf.getPage(i);
+      const ct = await pg.getTextContent();
+      text += ct.items.map(x=>x.str).join(' ') + '\n';
+    }
+    return text;
+  }catch(e){ return ''; }
+}
+
+function parseInspInfo(text){
+  let year=null, period=null;
+  const reDate = /(\d{4})\s*[.년]\s*0?(\d{1,2})\s*[.월]/g;
+  let m;
+  while((m=reDate.exec(text))!==null){
+    const y=parseInt(m[1]), mo=parseInt(m[2]);
+    if(y>=2010&&y<=2035&&mo>=1&&mo<=12){ year=y; period=mo<=6?'상반기':'하반기'; break; }
+  }
+  const gradeRe=[
+    /종합\s*안전\s*등급\s*[:\s]*([A-Ea-e])/,
+    /안전\s*등급\s*[:\s]*([A-Ea-e])/,
+    /상태\s*평가\s*[:\s]*([A-Ea-e])/,
+    /([A-Ea-e])\s*등급/,
+  ];
+  let grade=null;
+  for(const re of gradeRe){ const mg=re.exec(text); if(mg){ grade=mg[1].toUpperCase(); break; } }
+  return {year, period, grade};
+}
+
+async function extractInspectionInfo(file){
+  const type=detectInspType(file.name);
+  if(!type||ext(file.name)!=='pdf') return null;
+  const text=await extractPdfText(file);
+  if(!text.trim()) return {type, year:null, period:null, grade:null, scanned:true};
+  const info=parseInspInfo(text);
+  return {...info, type, scanned:false};
+}
+
+// ════════════════════════════════════
 // FILE UTILS
 // ════════════════════════════════════
 const FICONS={xlsx:'📊',xls:'📊',csv:'📊',hwp:'📝',hwpx:'📝',doc:'📝',docx:'📝',dwg:'📐',dxf:'📐',pdf:'📄',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',tif:'🖼️',tiff:'🖼️',zip:'🗜️','7z':'🗜️'};
@@ -873,18 +934,35 @@ document.getElementById('fi-school-dir').addEventListener('change',e=>{addSchool
 
 async function addSchoolFiles(fl){
   const expanded = await expandFiles(fl);
-  expanded.forEach(f=>{
+  for(const f of expanded){
     if(!schoolFiles.find(x=>x.name===f.name&&x.size===f.size)){
-      f._folder=detectFolderSmart(f); f._year=extractYear(f.name); schoolFiles.push(f);
+      f._folder=detectFolderSmart(f); f._year=extractYear(f.name);
+      f._insp=null; f._inspLoading=!!detectInspType(f.name)&&ext(f.name)==='pdf';
+      schoolFiles.push(f);
     }
-  });
+  }
   renderSchoolFiles();
   document.getElementById('btn-school-up').disabled=schoolFiles.length===0;
+  // 비동기 추출 (UI 먼저 보여주고 백그라운드 처리)
+  for(const f of schoolFiles.filter(f=>f._inspLoading)){
+    f._insp = await extractInspectionInfo(f);
+    f._inspLoading = false;
+    renderSchoolFiles();
+  }
 }
 
 function renderSchoolFiles(){
   document.getElementById('flist-school').innerHTML=schoolFiles.map((f,i)=>{
     const warn=f.size>75*1024*1024?`<span class="fpill fpill-err">⚠️ 75MB 초과</span>`:'';
+    const inspPill=f._inspLoading
+      ? `<span class="fpill" style="background:#fef9c3;color:#854d0e">⏳ 분석중...</span>`
+      : f._insp?.scanned
+        ? `<span class="fpill fpill-err">📷 스캔PDF-수동확인필요</span>`
+        : f._insp?.grade
+          ? `<span class="fpill" style="background:#f3e8ff;color:#6d28d9">📋 ${f._insp.year||''}년 ${f._insp.period||''} · ${f._insp.grade}등급</span>`
+          : f._insp
+            ? `<span class="fpill fpill-err">⚠️ 등급 미감지-수동확인</span>`
+            : '';
     return `<div class="fitem">
       <span class="fitem-ico">${FICONS[ext(f.name)]||'📁'}</span>
       <div class="fitem-info">
@@ -893,7 +971,7 @@ function renderSchoolFiles(){
           <span class="fpill fpill-folder">→ ${f._folder}</span>
           ${f._year?`<span class="fpill fpill-ok">${f._year}년</span>`:''}
           <span style="font-size:11px;color:var(--gray)">${fmtSz(f.size)}</span>
-          ${warn}
+          ${inspPill}${warn}
         </div>
       </div>
       <button class="fremove" onclick="removeSchoolFile(${i})">✕</button>
@@ -950,14 +1028,20 @@ document.getElementById('fi-bulk-dir').addEventListener('change',e=>{addBulkFile
 
 async function addBulkFiles(fl){
   const expanded = await expandFiles(fl);
-  expanded.forEach(f=>{
+  for(const f of expanded){
     if(!bulkFiles.find(x=>x.name===f.name&&x.size===f.size)){
       f._folder=detectFolderSmart(f); f._year=extractYear(f.name);
       const det=detectSchool(f.name);
-      f._sid=det.id; f._ambig=det.ambig; bulkFiles.push(f);
+      f._sid=det.id; f._ambig=det.ambig;
+      f._insp=null; f._inspLoading=!!detectInspType(f.name)&&ext(f.name)==='pdf';
+      bulkFiles.push(f);
     }
-  });
+  }
   renderBulkTable();
+  // 비동기 추출
+  for(const f of bulkFiles.filter(f=>f._inspLoading)){
+    extractInspectionInfo(f).then(info=>{ f._insp=info; f._inspLoading=false; renderBulkTable(); });
+  }
 }
 
 function renderBulkTable(){
@@ -973,11 +1057,21 @@ function renderBulkTable(){
     const sel=f._sid
       ?`<select class="rt-sel" onchange="setBulkSid(${i},this.value)">${visSchools.map(s=>`<option value="${s.id}"${s.id===f._sid?' selected':''}>${sLabel(s)}</option>`).join('')}</select>${f._ambig?'<span style="font-size:10px;color:var(--amber)"> ⚠️복수</span>':''}`
       :`<select class="rt-sel" style="border-color:var(--amber)" onchange="setBulkSid(${i},this.value)"><option value="">⚠️ 건물동 선택 필요</option>${opts}</select>`;
+    const inspCell = f._inspLoading
+      ? `<span style="font-size:11px;color:#854d0e">⏳분석중</span>`
+      : f._insp?.scanned
+        ? `<span style="font-size:11px;color:var(--red)">📷스캔PDF</span>`
+        : f._insp?.grade
+          ? `<span style="font-size:11px;color:#6d28d9">${f._insp.year||''}년 ${f._insp.period||''}<br>${f._insp.grade}등급</span>`
+          : f._insp
+            ? `<span style="font-size:11px;color:var(--amber)">⚠️미감지</span>`
+            : `<span style="font-size:11px;color:var(--gray)">—</span>`;
     return `<tr>
       <td style="color:var(--gray);font-size:11px">${i+1}</td>
       <td>${icon} ${f.name}<br><span style="font-size:11px;color:var(--gray)">${fmtSz(f.size)}</span></td>
       <td>${sel}</td>
       <td style="font-size:11px;color:var(--gray)">${f._folder}</td>
+      <td>${inspCell}</td>
       <td style="font-size:11px;color:var(--gray)">${fmtSz(f.size)}</td>
       <td><button class="fremove" onclick="removeBulk(${i})">✕</button></td>
     </tr>`;
@@ -1057,7 +1151,13 @@ function updateCLfromFile(sid,f){
   const l=f.name.toLowerCase().replace(/\s/g,'');
   CHECKLIST.forEach(item=>{
     for(const k of item.kw){
-      if(l.includes(k)){ setCLv(sid,item.key,item.cat==='struct'?(f._year||'O'):'O'); break; }
+      if(l.includes(k)){
+        const val = item.cat==='struct' ? (f._insp?.year||f._year||'O') : 'O';
+        setCLv(sid,item.key,String(val));
+        if(f._insp?.grade) setCLv(sid,item.key+'_grade',f._insp.grade);
+        if(f._insp?.period) setCLv(sid,item.key+'_period',f._insp.period);
+        break;
+      }
     }
   });
 }
@@ -1256,9 +1356,12 @@ function exportExcel(){
     const d=cl[s.id]||{};
     const g=key=>{ if(CHECKLIST.find(x=>x.key===key)?.priv&&s.type==='사립') return '사립학교미존재'; return d[key]||'X'; };
     const yr=key=>{ const v=d[key]; if(!v||v==='X') return 'X'; if(/^20\d{2}$/.test(v)) return v; return 'O'; };
+    const gr=key=>d[key+'_grade']||'';
+    const pd=key=>{ const v=d[key+'_period']; return v?v:''; };
+    const yrpd=key=>{ const y=yr(key); return y==='X'?'X': y+(pd(key)?` ${pd(key)}`:''); };
     data.push([i+1,s.region,s.area,s.type,s.school,s.building,
       g('overview'),g('drawing'),g('building'),g('public'),g('student'),g('standard'),
-      yr('type3'),'',yr('detail'),'',yr('precise'),'',yr('seismic'),g('seismic'),
+      yrpd('type3'),gr('type3'),yrpd('detail'),gr('detail'),yrpd('precise'),gr('precise'),yr('seismic'),g('seismic'),
       g('maint'),g('realmap'),g('interview')]);
   });
   const ws=XLSX.utils.aoa_to_sheet(data);
