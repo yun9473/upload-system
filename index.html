@@ -947,7 +947,8 @@ function renderBulkTable(){
   if(!bulkFiles.length){ document.getElementById('rt-wrap').style.display='none'; return; }
   document.getElementById('rt-wrap').style.display='block';
   const matched=bulkFiles.filter(f=>f._sid).length;
-  document.getElementById('rt-summary').textContent=`총 ${bulkFiles.length}개 · 자동감지 ${matched}개 · 미감지 ${bulkFiles.length-matched}개`;
+  const totalBytes=bulkFiles.reduce((s,f)=>s+f.size,0);
+  document.getElementById('rt-summary').textContent=`총 ${bulkFiles.length}개 · 자동감지 ${matched}개 · 미감지 ${bulkFiles.length-matched}개 · 합계 ${fmtSz(totalBytes)}`;
   const visSchools=SCHOOLS.filter(s=>visIds.includes(s.id));
   const opts=visSchools.map(s=>`<option value="${s.id}">${sLabel(s)}</option>`).join('');
   document.getElementById('rt-tbody').innerHTML=bulkFiles.map((f,i)=>{
