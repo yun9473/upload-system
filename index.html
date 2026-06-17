@@ -758,6 +758,7 @@ function loginAdmin(){
 }
 
 function startApp(label){
+  localStorage.setItem('bzSession', JSON.stringify({role, visIds, label}));
   document.getElementById('screen-login').style.display='none';
   document.getElementById('screen-app').style.display='flex';
   document.getElementById('tu').textContent=label;
@@ -785,6 +786,7 @@ function startApp(label){
 }
 
 function logout(){
+  localStorage.removeItem('bzSession');
   document.getElementById('screen-login').style.display='flex';
   document.getElementById('screen-app').style.display='none';
   role='school'; visIds=[]; curSchoolId=null; schoolFiles=[]; bulkFiles=[];
@@ -1325,6 +1327,18 @@ function toast(msg,type='info'){
   document.getElementById('twrap').appendChild(el);
   setTimeout(()=>el.remove(),4000);
 }
+
+// ════════════════════════════════════
+// 세션 복원 (새로고침 유지)
+// ════════════════════════════════════
+(function restoreSession(){
+  try{
+    const s=JSON.parse(localStorage.getItem('bzSession')||'null');
+    if(!s) return;
+    role=s.role; visIds=s.visIds;
+    startApp(s.label);
+  }catch(e){ localStorage.removeItem('bzSession'); }
+})();
 </script>
 </body>
 </html>
