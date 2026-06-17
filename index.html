@@ -289,9 +289,14 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
         <div id="panel-bulk" style="display:none">
           <div class="card">
             <div class="card-title">📦 발주청 일괄 업로드</div>
-            <div style="font-size:12px;background:var(--blue-l);padding:9px 12px;border-radius:7px;margin-bottom:12px;color:var(--text2)">
+            <div style="font-size:12px;background:var(--blue-l);padding:9px 12px;border-radius:7px;margin-bottom:8px;color:var(--text2)">
               💡 파일명에 학교명이 포함되면 자동 분류됩니다.<br>
-              예: <code style="background:#fff;padding:1px 5px;border-radius:3px">동성중_교사1호동_건축물대장.pdf</code>
+              예: <code style="background:#fff;padding:1px 5px;border-radius:3px">동성중_교사1호동_건축물대장.pdf</code><br>
+              ZIP 파일은 자동 압축 해제 후 내부 파일별로 분류됩니다.
+            </div>
+            <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:7px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#78350f;line-height:1.7">
+              ⚠️ <strong>파일 크기 제한: 1개당 최대 75MB</strong><br>
+              75MB 초과 파일은 업로드에 실패합니다. 초과 시 파일을 분할하거나 SharePoint에 직접 업로드해 주세요.
             </div>
             <div class="dz" id="dz-bulk">
               <input type="file" id="fi-bulk" multiple/>
@@ -342,11 +347,16 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
                     ✅ 필수: 실배치도, 사전인터뷰 자료<br>
                     ○ 선택: 유지보수이력, 구조분야 보고서
                   </div>
+                  <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:7px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#78350f;line-height:1.7">
+                    ⚠️ <strong>파일 크기 제한: 1개당 최대 75MB</strong><br>
+                    75MB 초과 파일은 업로드에 실패합니다. 초과 시 파일을 분할하거나 SharePoint에 직접 업로드해 주세요.<br>
+                    💡 ZIP 파일은 자동으로 압축 해제 후 내부 파일별로 분류됩니다.
+                  </div>
                   <div class="dz" id="dz-school">
                     <input type="file" id="fi-school" multiple/>
                     <span class="dz-ico">📁</span>
                     <div class="dz-t">파일 · 폴더 · ZIP을 끌어다 놓으세요</div>
-                    <div class="dz-h">클릭: 파일 선택 &nbsp;|&nbsp; Excel · 한글 · CAD · PDF · ZIP 등</div>
+                    <div class="dz-h">클릭: 파일 선택 &nbsp;|&nbsp; Excel · 한글 · CAD · PDF · ZIP 등 &nbsp;|&nbsp; 파일당 최대 75MB</div>
                   </div>
                   <input type="file" id="fi-school-dir" webkitdirectory multiple style="display:none"/>
                   <button type="button" onclick="document.getElementById('fi-school-dir').click()" style="margin-top:6px;font-size:12px;background:none;border:1px solid var(--gray-b);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text2)">📂 폴더 선택</button>
