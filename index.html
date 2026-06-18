@@ -478,7 +478,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
     <div class="modal-title" id="m-title"></div>
     <div id="m-body" style="font-size:14px;color:var(--text2)"></div>
     <div class="modal-actions">
-      <button class="btn btn-o btn-sm" onclick="closeModal()">취소</button>
+      <button class="btn btn-o btn-sm" id="m-cancel" onclick="closeModal()">취소</button>
       <button class="btn btn-r btn-sm" id="m-ok">확인</button>
     </div>
   </div>
@@ -489,38 +489,38 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
 // MASTER DATA
 // ════════════════════════════════════
 const SCHOOLS = [
-  {id:1,  disp:21, school:'효촌초',     building:'본관동',            region:'1권역', area:'동두천양주', type:'공립'},
-  {id:2,  disp:22, school:'능곡초',     building:'본관',              region:'1권역', area:'고양',      type:'공립'},
-  {id:3,  disp:23, school:'능곡초',     building:'별관',              region:'1권역', area:'고양',      type:'공립'},
-  {id:5,  disp:24, school:'덕소초',     building:'교사1호동',         region:'1권역', area:'남양주',    type:'공립'},
-  {id:6,  disp:25, school:'덕소초',     building:'교사2호동',         region:'1권역', area:'남양주',    type:'공립'},
-  {id:7,  disp:26, school:'금촌초',     building:'본관동',            region:'1권역', area:'파주',      type:'공립'},
-  {id:8,  disp:27, school:'금촌초',     building:'후관동',            region:'1권역', area:'파주',      type:'공립'},
-  {id:9,  disp:28, school:'금촌초',     building:'급식실',            region:'1권역', area:'파주',      type:'공립'},
-  {id:10, disp:29, school:'경북중',     building:'본관',              region:'1권역', area:'포천',      type:'공립'},
-  {id:11, disp:30, school:'포천중',     building:'교사1호동',         region:'1권역', area:'포천',      type:'공립'},
-  {id:12, disp:31, school:'일동고',     building:'본관동',            region:'1권역', area:'포천',      type:'공립'},
-  {id:13, disp:32, school:'의정부여중', building:'교사2호동',         region:'1권역', area:'의정부',    type:'공립'},
-  {id:14, disp:15, school:'동부초',     building:'본관 가동',         region:'2권역', area:'광주하남',  type:'공립'},
-  {id:15, disp:16, school:'동부초',     building:'본관 나동',         region:'2권역', area:'광주하남',  type:'공립'},
-  {id:16, disp:17, school:'신하초',     building:'본관',              region:'2권역', area:'이천',      type:'공립'},
-  {id:17, disp:18, school:'대월중',     building:'본관동',            region:'2권역', area:'이천',      type:'공립'},
-  {id:18, disp:19, school:'백사중',     building:'본관동',            region:'2권역', area:'이천',      type:'공립'},
-  {id:19, disp:13, school:'한광여고',   building:'본관동',            region:'3권역', area:'평택',      type:'사립'},
-  {id:20, disp:14, school:'한광여고',   building:'별관22호동',        region:'3권역', area:'평택',      type:'사립'},
-  {id:21, disp:3,  school:'삼일고',     building:'본관동',            region:'3권역', area:'수원',      type:'사립'},
-  {id:22, disp:5,  school:'성문고',     building:'본관동(2동)',       region:'3권역', area:'안양과천',  type:'사립'},
-  {id:23, disp:4,  school:'명학초',     building:'본관동',            region:'3권역', area:'안양과천',  type:'공립'},
-  {id:24, disp:6,  school:'관양초',     building:'교사1호동',         region:'3권역', area:'안양과천',  type:'공립'},
-  {id:25, disp:7,  school:'관양초',     building:'교사2호동',         region:'3권역', area:'안양과천',  type:'공립'},
-  {id:26, disp:8,  school:'소사초',     building:'교사1호동',         region:'3권역', area:'부천',      type:'공립'},
-  {id:27, disp:9,  school:'소사초',     building:'교사2호동',         region:'3권역', area:'부천',      type:'공립'},
-  {id:28, disp:10, school:'부천여고',   building:'1호동(본관)',       region:'3권역', area:'부천',      type:'공립'},
-  {id:29, disp:11, school:'부천여고',   building:'4호동(지성원)',     region:'3권역', area:'부천',      type:'공립'},
-  {id:30, disp:12, school:'관산초',     building:'교사1호동(본관동)', region:'3권역', area:'안산',      type:'공립'},
-  {id:31, disp:1,  school:'동성중',     building:'교사1호동',         region:'3권역', area:'수원',      type:'공립'},
-  {id:32, disp:2,  school:'동성중',     building:'창고및교실',        region:'3권역', area:'수원',      type:'공립'},
-  {id:33, disp:20, school:'양진초',     building:'제1캠퍼스1호동',   region:'2권역', area:'안성',      type:'공립'},
+  {id:1,  disp:21, school:'효촌초',     building:'본관동',            region:'1권역', area:'동두천양주', type:'공립', phone:''},
+  {id:2,  disp:22, school:'능곡초',     building:'본관',              region:'1권역', area:'고양',      type:'공립', phone:''},
+  {id:3,  disp:23, school:'능곡초',     building:'별관',              region:'1권역', area:'고양',      type:'공립', phone:''},
+  {id:5,  disp:24, school:'덕소초',     building:'교사1호동',         region:'1권역', area:'남양주',    type:'공립', phone:''},
+  {id:6,  disp:25, school:'덕소초',     building:'교사2호동',         region:'1권역', area:'남양주',    type:'공립', phone:''},
+  {id:7,  disp:26, school:'금촌초',     building:'본관동',            region:'1권역', area:'파주',      type:'공립', phone:''},
+  {id:8,  disp:27, school:'금촌초',     building:'후관동',            region:'1권역', area:'파주',      type:'공립', phone:''},
+  {id:9,  disp:28, school:'금촌초',     building:'급식실',            region:'1권역', area:'파주',      type:'공립', phone:''},
+  {id:10, disp:29, school:'경북중',     building:'본관',              region:'1권역', area:'포천',      type:'공립', phone:''},
+  {id:11, disp:30, school:'포천중',     building:'교사1호동',         region:'1권역', area:'포천',      type:'공립', phone:''},
+  {id:12, disp:31, school:'일동고',     building:'본관동',            region:'1권역', area:'포천',      type:'공립', phone:''},
+  {id:13, disp:32, school:'의정부여중', building:'교사2호동',         region:'1권역', area:'의정부',    type:'공립', phone:''},
+  {id:14, disp:15, school:'동부초',     building:'본관 가동',         region:'2권역', area:'광주하남',  type:'공립', phone:''},
+  {id:15, disp:16, school:'동부초',     building:'본관 나동',         region:'2권역', area:'광주하남',  type:'공립', phone:''},
+  {id:16, disp:17, school:'신하초',     building:'본관',              region:'2권역', area:'이천',      type:'공립', phone:''},
+  {id:17, disp:18, school:'대월중',     building:'본관동',            region:'2권역', area:'이천',      type:'공립', phone:''},
+  {id:18, disp:19, school:'백사중',     building:'본관동',            region:'2권역', area:'이천',      type:'공립', phone:''},
+  {id:19, disp:13, school:'한광여고',   building:'본관동',            region:'3권역', area:'평택',      type:'사립', phone:''},
+  {id:20, disp:14, school:'한광여고',   building:'별관22호동',        region:'3권역', area:'평택',      type:'사립', phone:''},
+  {id:21, disp:3,  school:'삼일고',     building:'본관동',            region:'3권역', area:'수원',      type:'사립', phone:''},
+  {id:22, disp:5,  school:'성문고',     building:'본관동(2동)',       region:'3권역', area:'안양과천',  type:'사립', phone:''},
+  {id:23, disp:4,  school:'명학초',     building:'본관동',            region:'3권역', area:'안양과천',  type:'공립', phone:''},
+  {id:24, disp:6,  school:'관양초',     building:'교사1호동',         region:'3권역', area:'안양과천',  type:'공립', phone:''},
+  {id:25, disp:7,  school:'관양초',     building:'교사2호동',         region:'3권역', area:'안양과천',  type:'공립', phone:''},
+  {id:26, disp:8,  school:'소사초',     building:'교사1호동',         region:'3권역', area:'부천',      type:'공립', phone:''},
+  {id:27, disp:9,  school:'소사초',     building:'교사2호동',         region:'3권역', area:'부천',      type:'공립', phone:''},
+  {id:28, disp:10, school:'부천여고',   building:'1호동(본관)',       region:'3권역', area:'부천',      type:'공립', phone:''},
+  {id:29, disp:11, school:'부천여고',   building:'4호동(지성원)',     region:'3권역', area:'부천',      type:'공립', phone:''},
+  {id:30, disp:12, school:'관산초',     building:'교사1호동(본관동)', region:'3권역', area:'안산',      type:'공립', phone:''},
+  {id:31, disp:1,  school:'동성중',     building:'교사1호동',         region:'3권역', area:'수원',      type:'공립', phone:''},
+  {id:32, disp:2,  school:'동성중',     building:'창고및교실',        region:'3권역', area:'수원',      type:'공립', phone:''},
+  {id:33, disp:20, school:'양진초',     building:'제1캠퍼스1호동',   region:'2권역', area:'안성',      type:'공립', phone:''},
 ].sort((a,b)=>a.disp-b.disp);
 
 const sLabel = s => `${String(s.disp).padStart(2,'0')}. ${s.school} ${s.building}`;
@@ -1017,6 +1017,8 @@ function showSchoolStatusModal(sid){
 
   document.getElementById('m-title').textContent=`📋 ${sLabel(s)} 제출 현황`;
   document.getElementById('m-body').innerHTML=`
+    ${s.phone?`<div style="font-size:13px;padding:7px 11px;background:#f0f9ff;border-radius:7px;margin-bottom:10px;color:#0369a1">
+      📞 행정실 전화번호: <strong>${s.phone}</strong></div>`:''}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <span style="font-size:12px;color:var(--gray)">전체 필수항목</span>
       <span style="font-size:14px;font-weight:700;color:${pctColor}">${ok}/${total} (${pct}%)</span>
@@ -1030,7 +1032,9 @@ function showSchoolStatusModal(sid){
         ${CHECKLIST.map(i=>rowHtml(i)).join('')}
       </tbody>
     </table>`;
+  document.getElementById('m-cancel').style.display='none';
   document.getElementById('m-ok').textContent='닫기';
+  document.getElementById('m-ok').style.background='var(--blue)';
   document.getElementById('m-ok').onclick=closeModal;
   document.getElementById('mbg').classList.add('open');
 }
@@ -1637,7 +1641,13 @@ function confirmReset(){
   };
   document.getElementById('mbg').classList.add('open');
 }
-function closeModal(){ document.getElementById('mbg').classList.remove('open'); }
+function closeModal(){
+  document.getElementById('mbg').classList.remove('open');
+  // 취소 버튼 원복 (학교현황 모달에서 숨겼을 수 있음)
+  document.getElementById('m-cancel').style.display='';
+  document.getElementById('m-ok').textContent='확인';
+  document.getElementById('m-ok').style.background='';
+}
 
 // ════════════════════════════════════
 // 업로드 실패 시 ZIP 다운로드 + 이메일 안내
