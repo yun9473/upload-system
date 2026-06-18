@@ -44,7 +44,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
 /* LOGIN */
 #screen-login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a8a,#3B6FE8)}
 .lcard{background:#fff;border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,.2);padding:44px 40px;width:100%;max-width:420px}
-.llogo{font-size:40px;text-align:center;margin-bottom:8px}
+.llogo{text-align:center;margin-bottom:16px;padding-top:4px}
 .ltitle{font-size:21px;font-weight:700;text-align:center;margin-bottom:4px}
 .lsub{font-size:13px;color:var(--gray);text-align:center;margin-bottom:28px}
 .ltabs{display:flex;gap:6px;margin-bottom:20px;background:var(--gray-l);padding:4px;border-radius:9px}
@@ -203,7 +203,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
 <!-- ══ LOGIN ══ -->
 <div id="screen-login">
   <div class="lcard">
-    <div class="llogo">📂</div>
+    <div class="llogo"><img src="kege_logo.png" alt="KEGE 한국교육녹색환경연구원" style="max-width:220px;height:auto"/></div>
     <div class="ltitle">기초자료 수신 관리 시스템</div>
     <div class="lsub" id="l-sub">로그인 유형을 선택하세요</div>
 
@@ -284,7 +284,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
 <!-- ══ APP ══ -->
 <div id="screen-app" class="app" style="display:none">
   <div class="topbar">
-    <div class="topbar-title">📂 기초자료 수신 관리 시스템</div>
+    <div class="topbar-title"><img src="kege_logo.png" alt="KEGE" style="height:22px;vertical-align:middle;filter:brightness(0)invert(1);margin-right:8px"/>기초자료 수신 관리 시스템</div>
     <div class="topbar-right">
       <span class="tu" id="tu"></span>
       <button class="tbtn" onclick="logout()">로그아웃</button>
@@ -662,13 +662,17 @@ const CHECKLIST = [
 ];
 
 const FOLDER_KW = [
-  {f:'01. 도면',                        kw:['도면','dwg','dxf','cad','배치도','평면도','입면도','단면도','상세도','구조도','설비도','전기도','배관도','조경도','토목도','건축도','위치도','현황도','지적도','지형도']},
+  {f:'01. 도면', kw:['도면','dwg','dxf','cad',
+    '배치도','평면도','입면도','단면도','상세도','구조도','설비도','전기도',
+    '배관도','조경도','토목도','건축도','위치도','현황도','지적도','지형도',
+    '항공지적도','토지이용계획확인서','토지이용계획','실측도','배선도','계획도',
+    '종단도','횡단도','측량도','용도지역','대지현황도']},
   {f:'02. 정밀(정기)안전점검 보고서',   kw:['3종','정기점검','정기안전','안전점검','정밀점검','정밀진단']},
   {f:'03. 내진성능평가보고서',          kw:['내진','내진성능','내진평가']},
-  {f:'04. 건축물대장',                  kw:['건축물대장','건물대장']},
-  {f:'05. 공유재산관리대장',            kw:['공유재산']},
+  {f:'04. 건축물대장',                  kw:['건축물대장','건물대장','토지대장','토지및건물','일반건축물']},
+  {f:'05. 공유재산관리대장',            kw:['공유재산','재산대장','공유재산관리']},
   {f:'06. SP',                          kw:['sp과부족','시설sp','학교sp']},
-  {f:'07. 사업계획서',                  kw:['사업계획','개요','기본현황']},
+  {f:'07. 사업계획서',                  kw:['사업계획','개요','기본현황','사업계획서','신청서','평가서','검토서','적정규모','타당성']},
   {f:'08. 증축이력 결과',               kw:['증축이력','증축']},
   {f:'09. 현장사진',                    kw:['현장사진']},
 ];
@@ -831,21 +835,42 @@ const fmtSz = b => b<1024?b+'B':b<1048576?(b/1024).toFixed(1)+'KB':(b/1048576).t
 
 function detectFolder(fname){
   const l=fname.toLowerCase().replace(/\s/g,'');
+  // 확장자 제거 후 기본명
+  const base=fname.replace(/\.[^.]+$/,'').replace(/\s/g,'');
+  // 파일명(확장자 제외)이 ~도로 끝나면 → 도면
+  if(/[가-힣]{2,}도$/.test(base)) return '01. 도면';
+  // FOLDER_KW 키워드 매칭
   for(const {f,kw} of FOLDER_KW) for(const k of kw) if(l.includes(k)) return f;
   return '10. 기타';
 }
 function extractYear(fname){ const m=fname.match(/20\d{2}/); return m?m[0]:null; }
 
-function detectSchool(fname){
-  const l=fname.toLowerCase().replace(/[\s_\-]/g,'');
+// 학교명에서 종류 접미사를 제거하여 기본명만 추출 (성문고→성문, 성문중고교→성문)
+function schoolBase(name){
+  return name.replace(/(?:여자)?(?:초등|중고등|중고|고등|중|초|고|학원|여중|여고)(?:학교)?$/,'');
+}
+function detectSchool(nameStr){
+  const clean=s=>s.toLowerCase().replace(/[\s_\-\(\)\.]/g,'');
+  const l=clean(nameStr);
+  // 1단계: 학교명+건물명 완전 일치
   for(const s of SCHOOLS){
-    const full=(s.school+s.building).toLowerCase().replace(/\s/g,'');
-    if(l.includes(full)) return {id:s.id,ambig:false};
+    if(l.includes(clean(s.school+s.building))) return {id:s.id,ambig:false};
   }
+  // 2단계: 학교명 일치
   const hits=[];
-  for(const s of SCHOOLS) if(l.includes(s.school.toLowerCase())) hits.push(s.id);
+  for(const s of SCHOOLS){
+    if(l.includes(clean(s.school)) && !hits.includes(s.id)) hits.push(s.id);
+  }
   if(hits.length===1) return {id:hits[0],ambig:false};
   if(hits.length>1)   return {id:hits[0],ambig:true};
+  // 3단계: 학교 기본명(접미사 제거) 일치 — 성문중고교→성문→성문고 매칭
+  const baseHits=[];
+  for(const s of SCHOOLS){
+    const b=schoolBase(s.school);
+    if(b.length>=2 && l.includes(clean(b)) && !baseHits.includes(s.id)) baseHits.push(s.id);
+  }
+  if(baseHits.length===1) return {id:baseHits[0],ambig:false};
+  if(baseHits.length>1)   return {id:baseHits[0],ambig:true};
   return {id:null,ambig:false};
 }
 
@@ -1248,11 +1273,25 @@ function showSchoolStatusModal(sid){
     else if(v==='O'){ dv='O'; dc='vo'; }
     else { dv=v; dc='vyr'; }
     const grade=d[item.key+'_grade']?` <span style="color:#6d28d9;font-size:11px">[${d[item.key+'_grade']}등급]</span>`:'';
+    const isAdmin=role==='admin';
+    const statusCell=isAdmin&&!isPriv
+      ? `<button onclick="adminToggleCL(${sid},'${item.key}')" style="background:none;border:1px solid var(--gray-b);border-radius:5px;padding:3px 10px;cursor:pointer;font-size:13px" title="클릭하여 O/X 변경"><span class="${dc}">${dv}</span>${grade}</button>`
+      : `<span class="${dc}" style="font-size:13px">${dv}</span>${grade}`;
     return `<tr>
       <td style="font-size:12px;padding:5px 8px">${item.label}</td>
-      <td style="text-align:center;padding:5px 8px"><span class="${dc}" style="font-size:13px">${dv}</span>${grade}</td>
+      <td style="text-align:center;padding:5px 8px">${statusCell}</td>
     </tr>`;
   };
+
+  const isAdmin=role==='admin';
+  const otherFiles=getOtherFiles(sid);
+  const otherSection=isAdmin&&otherFiles.length
+    ? `<div style="margin-top:14px;padding:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px">
+        <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">⚠️ 기타(10. 기타) 분류된 파일 — 직접 확인 필요</div>
+        <div style="font-size:11px;color:#78350f;line-height:1.8">${otherFiles.map(f=>`• ${f}`).join('<br>')}</div>
+        <button onclick="clearOtherFiles(${sid});showSchoolStatusModal(${sid})" style="margin-top:8px;font-size:11px;background:none;border:1px solid #fed7aa;border-radius:4px;padding:2px 8px;cursor:pointer;color:#92400e">목록 초기화</button>
+      </div>`
+    : isAdmin?`<div style="margin-top:10px;font-size:11px;color:var(--gray);text-align:center">기타 분류 파일 없음</div>`:'';
 
   document.getElementById('m-title').textContent=`📋 ${sLabel(s)} 제출 현황`;
   document.getElementById('m-body').innerHTML=`
@@ -1261,20 +1300,30 @@ function showSchoolStatusModal(sid){
       <span style="font-size:12px;color:var(--gray)">전체 필수항목</span>
       <span style="font-size:14px;font-weight:700;color:${pctColor}">${ok}/${total} (${pct}%)</span>
     </div>
+    ${isAdmin?'<div style="font-size:11px;color:var(--blue);margin-bottom:8px">✏️ 관리자: 수신 셀 클릭으로 O/X 직접 변경</div>':''}
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr>
         <th style="background:var(--gray-l);padding:5px 8px;text-align:left;font-size:11px;border-bottom:1px solid var(--gray-b)">자료명</th>
-        <th style="background:var(--gray-l);padding:5px 8px;text-align:center;font-size:11px;border-bottom:1px solid var(--gray-b);width:80px">수신</th>
+        <th style="background:var(--gray-l);padding:5px 8px;text-align:center;font-size:11px;border-bottom:1px solid var(--gray-b);width:${isAdmin?'110px':'80px'}">수신${isAdmin?' ✏️':''}</th>
       </tr></thead>
       <tbody style="border:1px solid var(--gray-b)">
         ${CHECKLIST.map(i=>rowHtml(i)).join('')}
       </tbody>
-    </table>`;
+    </table>
+    ${otherSection}`;
   document.getElementById('m-cancel').style.display='none';
   document.getElementById('m-ok').textContent='닫기';
   document.getElementById('m-ok').style.background='var(--blue)';
-  document.getElementById('m-ok').onclick=closeModal;
+  document.getElementById('m-ok').onclick=()=>{ closeModal(); buildSidebar(); };
   document.getElementById('mbg').classList.add('open');
+}
+
+function adminToggleCL(sid,key){
+  const d=getCL()[sid]||{};
+  const cur=d[key];
+  const next=(cur&&cur!=='X')?'X':'O';
+  setCLv(sid,key,next);
+  showSchoolStatusModal(sid);
 }
 
 function selectSchool(id){
@@ -1434,7 +1483,22 @@ async function addBulkFiles(fl){
   for(const f of expanded){
     if(!bulkFiles.find(x=>x.name===f.name&&x.size===f.size)){
       f._folder=detectFolderSmart(f); f._year=extractYear(f.name);
-      const det=detectSchool(f.name);
+      // 학교 감지: ① ZIP/폴더 경로의 각 폴더명 → ② 파일명 순서로 시도
+      let det={id:null,ambig:false};
+      if(f._dropFolder){
+        // ZIP/드롭 폴더 경로의 각 단계에서 학교 감지 시도
+        const parts=f._dropFolder.split('/');
+        for(const part of parts){
+          const d=detectSchool(part);
+          if(d.id){ det=d; break; }
+        }
+      }
+      if(!det.id) det=detectSchool(f.name);
+      // '_공통' 또는 'common' 폴더에 있으면 전체공통으로 자동 배정
+      if(!det.id && f._dropFolder){
+        const topFolder=f._dropFolder.split('/')[0];
+        if(/^[_]?공통|^common/i.test(topFolder)) det={id:'common',ambig:false};
+      }
       f._sid=det.id; f._ambig=det.ambig;
       f._insp=null; f._inspLoading=!!detectInspType(f.name)&&ext(f.name)==='pdf';
       f._bldg=null; f._bldgLoading=!!detectBldgDocType(f.name)&&ext(f.name)==='pdf';
@@ -1458,12 +1522,20 @@ function renderBulkTable(){
   const totalBytes=bulkFiles.reduce((s,f)=>s+f.size,0);
   document.getElementById('rt-summary').textContent=`총 ${bulkFiles.length}개 · 자동감지 ${matched}개 · 미감지 ${bulkFiles.length-matched}개 · 합계 ${fmtSz(totalBytes)}`;
   const visSchools=SCHOOLS.filter(s=>visIds.includes(s.id));
-  const opts=visSchools.map(s=>`<option value="${s.id}">${sLabel(s)}</option>`).join('');
+  // 전체공통 + 학교 목록 옵션
+  const commonOpt=`<option value="common">🌐 전체공통 (_공통 폴더)</option>`;
+  const schoolOpts=visSchools.map(s=>`<option value="${s.id}">${sLabel(s)}</option>`).join('');
+  const allOpts=commonOpt+schoolOpts;
   document.getElementById('rt-tbody').innerHTML=bulkFiles.map((f,i)=>{
     const icon=FICONS[ext(f.name)]||'📁';
-    const sel=f._sid
-      ?`<select class="rt-sel" onchange="setBulkSid(${i},this.value)">${visSchools.map(s=>`<option value="${s.id}"${s.id===f._sid?' selected':''}>${sLabel(s)}</option>`).join('')}</select>${f._ambig?'<span style="font-size:10px;color:var(--amber)"> ⚠️복수</span>':''}`
-      :`<select class="rt-sel" style="border-color:var(--amber)" onchange="setBulkSid(${i},this.value)"><option value="">⚠️ 건물동 선택 필요</option>${opts}</select>`;
+    let sel;
+    if(f._sid==='common'){
+      sel=`<select class="rt-sel" style="color:var(--blue)" onchange="setBulkSid(${i},this.value)"><option value="common" selected>🌐 전체공통</option>${schoolOpts}</select>`;
+    } else if(f._sid){
+      sel=`<select class="rt-sel" onchange="setBulkSid(${i},this.value)">${commonOpt}${visSchools.map(s=>`<option value="${s.id}"${s.id===f._sid?' selected':''}>${sLabel(s)}</option>`).join('')}</select>${f._ambig?'<span style="font-size:10px;color:var(--amber)"> ⚠️복수</span>':''}`;
+    } else {
+      sel=`<select class="rt-sel" style="border-color:var(--amber)" onchange="setBulkSid(${i},this.value)"><option value="">⚠️ 건물동 선택 필요</option>${allOpts}</select>`;
+    }
     const inspCell = f._inspLoading||f._bldgLoading
       ? `<span style="font-size:11px;color:#854d0e">⏳분석중</span>`
       : f._insp?.scanned||f._bldg?.scanned
@@ -1492,14 +1564,17 @@ function renderBulkTable(){
     </tr>`;
   }).join('');
 }
-function setBulkSid(i,v){ bulkFiles[i]._sid=v?parseInt(v):null; }
+function setBulkSid(i,v){
+  if(v==='common') bulkFiles[i]._sid='common';
+  else bulkFiles[i]._sid=v?parseInt(v):null;
+}
 function removeBulk(i){ bulkFiles.splice(i,1); renderBulkTable(); }
 
 async function doBulkUpload(){
   const paUrl=(cfg().paUrl||'').trim();
   if(!paUrl){ toast('Power Automate URL을 먼저 설정해주세요','error'); return; }
   const unassigned=bulkFiles.filter(f=>!f._sid);
-  if(unassigned.length){ toast(`${unassigned.length}개 파일에 학교를 지정해주세요`,'error'); return; }
+  if(unassigned.length){ toast(`${unassigned.length}개 파일에 학교(또는 전체공통)를 지정해주세요`,'error'); return; }
   if(bulkFiles.some(f=>f._inspLoading||f._bldgLoading)){
     toast('PDF 분석이 아직 진행 중입니다. 잠시 후 다시 시도해주세요.','error'); return;
   }
@@ -1510,12 +1585,21 @@ async function doBulkUpload(){
   let done=0, failedFiles=[], errors=[];
   try{
     for(const f of snapshot){
-      const s=SCHOOLS.find(x=>x.id===f._sid);
-      const path=`${base?base+'/':''}07. 학교별 평가표/${sLabel(s)}/${f._folder}/${f.name}`;
-      setPg('bulk',`[${s.school}] ${f.name}`,Math.round(done/snapshot.length*100));
+      let path;
+      if(f._sid==='common'){
+        // 전체공통 → _공통 폴더 바로 아래
+        path=`${base?base+'/':''}_공통/${f._folder}/${f.name}`;
+        setPg('bulk',`[전체공통] ${f.name}`,Math.round(done/snapshot.length*100));
+      } else {
+        const s=SCHOOLS.find(x=>x.id===f._sid);
+        path=`${base?base+'/':''}07. 학교별 평가표/${sLabel(s)}/${f._folder}/${f.name}`;
+        setPg('bulk',`[${s.school}] ${f.name}`,Math.round(done/snapshot.length*100));
+      }
       try{
         await uploadViaPA(paUrl,f,path);
-        updateCLfromFile(f._sid,f);
+        if(f._sid!=='common') updateCLfromFile(f._sid,f);
+        // 기타 폴더로 분류된 파일 기록 (관리자 확인용)
+        if(f._folder==='10. 기타' && f._sid!=='common') recordOtherFile(f._sid,f.name);
       }catch(e){
         failedFiles.push(f);
         errors.push(`${f.name}: ${e instanceof Error?e.message:String(e)}`);
@@ -1586,6 +1670,19 @@ async function testPaConnection(){
     else toast('연결 실패: '+e.message,'error');
   }
 }
+
+// ════════════════════════════════════
+// 기타 파일 기록 (관리자 확인용)
+// ════════════════════════════════════
+const otherKey=sid=>`bzOther_${currentProject?.id||'default'}_${sid}`;
+function recordOtherFile(sid,fname){
+  const k=otherKey(sid);
+  const list=JSON.parse(localStorage.getItem(k)||'[]');
+  if(!list.includes(fname)) list.push(fname);
+  localStorage.setItem(k,JSON.stringify(list));
+}
+function getOtherFiles(sid){ return JSON.parse(localStorage.getItem(otherKey(sid))||'[]'); }
+function clearOtherFiles(sid){ localStorage.removeItem(otherKey(sid)); }
 
 // ════════════════════════════════════
 // CHECKLIST
