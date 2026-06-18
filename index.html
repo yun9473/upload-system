@@ -448,6 +448,24 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
         </div>
 
         <div class="card">
+          <div class="card-title">📞 학교 전화번호 자동조회 (NEIS)</div>
+          <div style="font-size:12px;color:var(--gray);margin-bottom:10px">
+            NEIS 교육정보 개방포털 API 키를 입력하고 조회하면 전체 학교 대표번호를 자동으로 가져옵니다.<br>
+            조회 결과는 이 브라우저에 저장되어 학교 현황 팝업에 표시됩니다.
+          </div>
+          <div class="fg">
+            <label class="fl">NEIS API 키</label>
+            <input class="fi" id="a-neis-key" type="password" placeholder="open.neis.go.kr에서 발급받은 API 키"/>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-p btn-sm" onclick="saveNeisKey()">💾 키 저장</button>
+            <button class="btn btn-g btn-sm" id="btn-neis-fetch" onclick="fetchAllPhones()">📞 전화번호 전체 조회</button>
+            <span id="neis-status" style="font-size:12px;color:var(--gray)"></span>
+          </div>
+          <div id="neis-result" style="margin-top:10px;font-size:12px;display:none;max-height:200px;overflow-y:auto;background:var(--gray-l);border-radius:7px;padding:8px 12px"></div>
+        </div>
+
+        <div class="card">
           <div class="card-title">🏫 학교별 접속 코드 관리
             <button class="btn btn-g btn-sm" style="margin-left:auto" onclick="saveSchoolCodes()">💾 전체 저장</button>
           </div>
@@ -1017,8 +1035,7 @@ function showSchoolStatusModal(sid){
 
   document.getElementById('m-title').textContent=`📋 ${sLabel(s)} 제출 현황`;
   document.getElementById('m-body').innerHTML=`
-    ${s.phone?`<div style="font-size:13px;padding:7px 11px;background:#f0f9ff;border-radius:7px;margin-bottom:10px;color:#0369a1">
-      📞 행정실 전화번호: <strong>${s.phone}</strong></div>`:''}
+    ${(()=>{ const tel=getPhones()[s.school]||s.phone; return tel?`<div style="font-size:13px;padding:7px 11px;background:#f0f9ff;border-radius:7px;margin-bottom:10px;color:#0369a1">📞 대표 전화번호: <strong>${tel}</strong></div>`:''; })()}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <span style="font-size:12px;color:var(--gray)">전체 필수항목</span>
       <span style="font-size:14px;font-weight:700;color:${pctColor}">${ok}/${total} (${pct}%)</span>
@@ -1597,6 +1614,82 @@ function loadAdminForm(){
   document.getElementById('a-paurl').value=c.paUrl||'';
   document.getElementById('a-basepath').value=c.basePath||'';
   document.getElementById('a-agc').value=c.agencyCode||'교육청2026';
+  document.getElementById('a-neis-key').value=c.neisKey?'●'.repeat(16):''; // 마스킹 표시
+  const phones=getPhones();
+  const cnt=Object.keys(phones).length;
+  if(cnt>0) document.getElementById('neis-status').textContent=`저장된 번호 ${cnt}개교`;
+}
+
+// ════════════════════════════════════
+// NEIS 학교 전화번호 자동조회
+// ════════════════════════════════════
+const getPhones = () => JSON.parse(localStorage.getItem('bzPhones')||'{}');
+const savePhone = (schoolName, tel) => {
+  const d=getPhones(); d[schoolName]=tel; localStorage.setItem('bzPhones',JSON.stringify(d));
+};
+
+function saveNeisKey(){
+  const v=document.getElementById('a-neis-key').value.trim();
+  if(!v||v.startsWith('●')) return; // 마스킹된 값은 저장 안 함
+  saveCfg({neisKey:v});
+  document.getElementById('a-neis-key').value='●'.repeat(16);
+  toast('NEIS API 키 저장됨','success');
+}
+
+// 학교명 약칭 → NEIS 검색용 전체명 변환
+function expandSchoolName(name){
+  if(/여중$/.test(name)) return name.replace(/여중$/,'여자중학교');
+  if(/여고$/.test(name)) return name.replace(/여고$/,'여자고등학교');
+  if(/초$/.test(name))   return name+'등학교';
+  if(/중$/.test(name))   return name+'학교';
+  if(/고$/.test(name))   return name+'등학교';
+  return name;
+}
+
+async function fetchPhoneForSchool(schoolName, apiKey){
+  const fullName = expandSchoolName(schoolName);
+  const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${apiKey}&Type=json&SCHUL_NM=${encodeURIComponent(fullName)}&LCTN_SC_NM=${encodeURIComponent('경기도')}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  const rows = json?.schoolInfo?.[1]?.row;
+  if(!rows||!rows.length) return null;
+  // 동명이교 대비: 학교명 정확히 일치하는 것 우선
+  const exact = rows.find(r=>r.SCHUL_NM===fullName) || rows[0];
+  return exact.ORG_TELNO||null;
+}
+
+async function fetchAllPhones(){
+  const apiKey = cfg().neisKey;
+  if(!apiKey){ toast('NEIS API 키를 먼저 저장해주세요','error'); return; }
+
+  const btn=document.getElementById('btn-neis-fetch');
+  const status=document.getElementById('neis-status');
+  const resultDiv=document.getElementById('neis-result');
+  btn.disabled=true;
+  resultDiv.style.display='block';
+  resultDiv.innerHTML='';
+
+  // 학교명 중복 제거 (동 여러 개인 학교는 한 번만 조회)
+  const uniqueSchools=[...new Set(SCHOOLS.map(s=>s.school))];
+  let ok=0, fail=0;
+
+  for(let i=0;i<uniqueSchools.length;i++){
+    const name=uniqueSchools[i];
+    status.textContent=`조회 중… ${i+1}/${uniqueSchools.length}`;
+    try{
+      const tel = await fetchPhoneForSchool(name, apiKey);
+      if(tel){ savePhone(name,tel); ok++; resultDiv.innerHTML+=`<div>✅ ${name}: ${tel}</div>`; }
+      else { fail++; resultDiv.innerHTML+=`<div style="color:var(--amber)">⚠️ ${name}: 결과 없음</div>`; }
+    }catch(e){
+      fail++; resultDiv.innerHTML+=`<div style="color:var(--red)">❌ ${name}: 오류</div>`;
+    }
+    // API 과부하 방지
+    await new Promise(r=>setTimeout(r,200));
+  }
+
+  status.textContent=`완료 — 성공 ${ok}개 / 미조회 ${fail}개`;
+  btn.disabled=false;
+  toast(`전화번호 조회 완료 (${ok}개 성공)`,'success');
 }
 function savePaConfig(){
   saveCfg({paUrl:document.getElementById('a-paurl').value.trim(),basePath:document.getElementById('a-basepath').value.trim()});
