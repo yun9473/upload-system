@@ -131,15 +131,15 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
 .sval.b{color:var(--blue)}.sval.g{color:var(--green)}.sval.r{color:var(--red)}.sval.a{color:var(--amber)}
 
 /* OVERVIEW TABLE */
-.ovw{overflow-x:auto;border-radius:8px;border:1px solid var(--gray-b)}
-.ovt{border-collapse:collapse;font-size:12px;min-width:100%}
+.ovw{overflow-x:auto;overflow-y:auto;max-height:72vh;border-radius:8px;border:1px solid var(--gray-b)}
+.ovt{border-collapse:collapse;font-size:13px;min-width:100%}
 .ovt th,.ovt td{border:1px solid var(--gray-b);text-align:center;vertical-align:middle;padding:5px 6px}
-.ovt th{background:#f8fafc;font-weight:700;font-size:11px}
+.ovt th{background:#f8fafc;font-weight:700;font-size:12px}
 .ovt td.sname{text-align:left;font-weight:600;white-space:nowrap;padding:6px 10px;background:#fff}
-.ovt td.reg{font-size:10px;color:var(--gray);white-space:nowrap}
+.ovt td.reg{font-size:11px;color:var(--gray);white-space:nowrap}
 /* Vertical header */
-.ovt th.vhdr{width:36px;max-width:40px;padding:6px 2px;height:100px;vertical-align:bottom}
-.ovt th.vhdr .vt{writing-mode:vertical-rl;font-size:10px;font-weight:600;white-space:nowrap;line-height:1.3;display:block;text-align:left}
+.ovt th.vhdr{width:42px;max-width:46px;padding:6px 2px;height:120px;vertical-align:bottom}
+.ovt th.vhdr .vt{writing-mode:vertical-rl;font-size:11px;font-weight:600;white-space:nowrap;line-height:1.3;display:block;text-align:left}
 /* Cat colours */
 .cat-c{background:#dbeafe;color:#1e40af}
 .cat-f{background:#fef9c3;color:#78350f}
@@ -617,6 +617,7 @@ function detectInspType(fname){
   if(/정기안전점검|3종시설물|3종점검|정기점검/.test(fname)) return 'type3';
   if(/정밀안전진단|정밀진단/.test(fname)) return 'precise';
   if(/정밀안전점검|정밀점검/.test(fname)) return 'detail';
+  if(/내진성능평가|내진평가|내진성능/.test(fname)) return 'seismic';
   return null;
 }
 
@@ -977,11 +978,61 @@ function buildSidebar(){
   document.getElementById('sb-schools').innerHTML=my.map(s=>{
     const {ok,total}=getStatus(s.id,cl);
     const cls=ok===total&&total>0?'ok':ok>0?'part':'no';
-    return `<div class="s-item" onclick="selectSchool(${s.id});showScreen('upload')">
+    // 관리자·발주청: 클릭 시 해당 학교 제출현황 팝업
+    const onclick = role==='school'
+      ? `selectSchool(${s.id});showScreen('upload')`
+      : `showSchoolStatusModal(${s.id})`;
+    return `<div class="s-item" onclick="${onclick}">
       <span style="opacity:.45;font-size:10px;flex-shrink:0">${String(s.disp).padStart(2,'0')}</span>
       <span class="sname">${s.school} ${s.building}</span>
       <span class="sbadge ${cls}">${ok}/${total}</span></div>`;
   }).join('');
+}
+
+function showSchoolStatusModal(sid){
+  const s=SCHOOLS.find(x=>x.id===sid);
+  const d=getCL()[sid]||{};
+  const c3Any=CHECKLIST.filter(i=>i.sg==='c3').some(i=>{ const v=d[i.key]; return v&&v!=='X'; });
+  const {ok,total}=getStatus(sid,getCL());
+  const pct=total>0?Math.round(ok/total*100):0;
+  const pctColor=pct===100?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+
+  const rowHtml=item=>{
+    const v=d[item.key];
+    const isPriv=item.priv&&s.type==='사립';
+    const isc3group=item.sg==='c3';
+    let dv,dc;
+    if(isPriv){ dv='미존재'; dc='vna'; }
+    else if(isc3group){
+      if(c3Any){ dv='O'; dc='vo'; } else { dv='X'; dc='vx'; }
+    } else if(!v||v==='X'){ dv='X'; dc='vx'; }
+    else if(v==='O'){ dv='O'; dc='vo'; }
+    else { dv=v; dc='vyr'; }
+    const grade=d[item.key+'_grade']?` <span style="color:#6d28d9;font-size:11px">[${d[item.key+'_grade']}등급]</span>`:'';
+    return `<tr>
+      <td style="font-size:12px;padding:5px 8px">${item.label}</td>
+      <td style="text-align:center;padding:5px 8px"><span class="${dc}" style="font-size:13px">${dv}</span>${grade}</td>
+    </tr>`;
+  };
+
+  document.getElementById('m-title').textContent=`📋 ${sLabel(s)} 제출 현황`;
+  document.getElementById('m-body').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--gray)">전체 필수항목</span>
+      <span style="font-size:14px;font-weight:700;color:${pctColor}">${ok}/${total} (${pct}%)</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr>
+        <th style="background:var(--gray-l);padding:5px 8px;text-align:left;font-size:11px;border-bottom:1px solid var(--gray-b)">자료명</th>
+        <th style="background:var(--gray-l);padding:5px 8px;text-align:center;font-size:11px;border-bottom:1px solid var(--gray-b);width:80px">수신</th>
+      </tr></thead>
+      <tbody style="border:1px solid var(--gray-b)">
+        ${CHECKLIST.map(i=>rowHtml(i)).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('m-ok').textContent='닫기';
+  document.getElementById('m-ok').onclick=closeModal;
+  document.getElementById('mbg').classList.add('open');
 }
 
 function selectSchool(id){
@@ -1037,11 +1088,15 @@ function renderSchoolFiles(){
       ? `<span class="fpill" style="background:#fef9c3;color:#854d0e">⏳ 분석중...</span>`
       : f._insp?.scanned
         ? `<span class="fpill fpill-err">📷 스캔PDF-수동확인필요</span>`
-        : f._insp?.grade
-          ? `<span class="fpill" style="background:#f3e8ff;color:#6d28d9">📋 ${f._insp.year||''}년 ${f._insp.period||''} · ${f._insp.grade}등급</span>`
-          : f._insp
-            ? `<span class="fpill fpill-err">⚠️ 등급 미감지-수동확인</span>`
-            : '';
+        : f._insp?.type==='seismic'
+          ? f._insp.year
+            ? `<span class="fpill" style="background:#f3e8ff;color:#6d28d9">📋 내진 ${f._insp.year}년</span>`
+            : `<span class="fpill fpill-err">⚠️ 내진 연도 미감지</span>`
+          : f._insp?.grade
+            ? `<span class="fpill" style="background:#f3e8ff;color:#6d28d9">📋 ${f._insp.year||''}년 ${f._insp.period||''} · ${f._insp.grade}등급</span>`
+            : f._insp
+              ? `<span class="fpill fpill-err">⚠️ 등급 미감지-수동확인</span>`
+              : '';
     const bldgPill=f._bldgLoading
       ? `<span class="fpill" style="background:#fef9c3;color:#854d0e">⏳ 연면적 분석중...</span>`
       : f._bldg?.scanned
@@ -1171,6 +1226,10 @@ function renderBulkTable(){
       ? `<span style="font-size:11px;color:#854d0e">⏳분석중</span>`
       : f._insp?.scanned||f._bldg?.scanned
         ? `<span style="font-size:11px;color:var(--red)">📷스캔PDF</span>`
+        : f._insp?.type==='seismic'
+        ? f._insp.year
+          ? `<span style="font-size:11px;color:#6d28d9">내진 ${f._insp.year}년</span>`
+          : `<span style="font-size:11px;color:var(--amber)">⚠️연도미감지</span>`
         : f._insp?.grade
           ? `<span style="font-size:11px;color:#6d28d9">${f._insp.year||''}년 ${f._insp.period||''}<br>${f._insp.grade}등급</span>`
           : f._insp
@@ -1296,8 +1355,8 @@ function updateCLfromFile(sid,f){
       if(l.includes(k)){
         const val = item.cat==='struct' ? (f._insp?.year||f._year||'O') : 'O';
         setCLv(sid,item.key,String(val));
-        if(f._insp?.grade)  setCLv(sid,item.key+'_grade',f._insp.grade);
-        if(f._insp?.period) setCLv(sid,item.key+'_period',f._insp.period);
+        if(f._insp?.grade&&f._insp.type!=='seismic')  setCLv(sid,item.key+'_grade',f._insp.grade);
+        if(f._insp?.period&&f._insp.type!=='seismic') setCLv(sid,item.key+'_period',f._insp.period);
         // 건축물대장·공유재산 연면적 저장
         if(f._bldg&&!f._bldg.scanned&&f._bldg.pairs?.length){
           // 현재 학교(sid)와 매칭된 쌍 우선, 없으면 첫 번째
@@ -1421,41 +1480,40 @@ function buildStatusScreen(){
   // ── Overview table ──
   // Columns: school-name, region, [checklist items...], 완료율
   // 구조보고서 그룹을 1열로 합침
+  // 공통끼리 묶어서 순서 재배치
   const cols=[
-    {key:'overview', label:'학교별 개요',   cat:'cat-c', tip:'공통'},
-    {key:'drawing',  label:'도면',           cat:'cat-c', tip:'공통'},
-    {key:'building', label:'건축물 대장',    cat:'cat-c', tip:'공통'},
-    {key:'public',   label:'공유재산 관리대장', cat:'cat-c', tip:'공통'},
-    {key:'student',  label:'중장기 학생 배치계획', cat:'cat-f', tip:'기능/성능'},
-    {key:'standard', label:'학교급별 시설기준',  cat:'cat-f', tip:'기능/성능'},
-    {key:'c3',       label:'구조보고서 (3종·정밀점검·진단)', cat:'cat-s', tip:'구조 (1종이상)', isGroup:true},
-    {key:'seismic',  label:'내진성능 평가보고서', cat:'cat-s', tip:'구조'},
-    {key:'maint',    label:'유지보수이력 (10년)', cat:'cat-e', tip:'경제성'},
-    {key:'realmap',  label:'실배치도',       cat:'cat-c', tip:'공통'},
-    {key:'interview',label:'사전인터뷰 자료', cat:'cat-c', tip:'공통'},
+    {key:'overview', label:'학교별 개요',              cat:'cat-c', tip:'공통'},
+    {key:'drawing',  label:'도면',                     cat:'cat-c', tip:'공통'},
+    {key:'building', label:'건축물대장',               cat:'cat-c', tip:'공통'},
+    {key:'public',   label:'공유재산 관리대장',        cat:'cat-c', tip:'공통'},
+    {key:'realmap',  label:'실배치도',                 cat:'cat-c', tip:'공통'},
+    {key:'interview',label:'사전인터뷰 자료',          cat:'cat-c', tip:'공통'},
+    {key:'student',  label:'중장기 학생 배치계획',     cat:'cat-f', tip:'기능/성능'},
+    {key:'standard', label:'학교급별 시설기준',        cat:'cat-f', tip:'기능/성능'},
+    {key:'c3',       label:'구조보고서 (3종·정밀·진단)', cat:'cat-s', tip:'구조 (1종이상)', isGroup:true},
+    {key:'seismic',  label:'내진성능 평가보고서',      cat:'cat-s', tip:'구조 (시행연도)'},
+    {key:'maint',    label:'유지보수이력 (10년)',       cat:'cat-e', tip:'경제성'},
   ];
 
-  // group categories for colspan header
   const catGroups=[];
   let prevCat=null, cnt=0;
   cols.forEach((c,i)=>{
-    if(c.cat!==prevCat){
-      if(prevCat) catGroups.push({cat:prevCat,count:cnt});
-      prevCat=c.cat; cnt=1;
-    } else cnt++;
+    if(c.cat!==prevCat){ if(prevCat) catGroups.push({cat:prevCat,count:cnt}); prevCat=c.cat; cnt=1; }
+    else cnt++;
     if(i===cols.length-1) catGroups.push({cat:prevCat,count:cnt});
   });
 
   const catLabel={'cat-c':'공통','cat-f':'기능/성능','cat-s':'구조','cat-e':'경제성'};
+  const ROW1H=34; // 카테고리 헤더 행 높이(px) - sticky 오프셋
 
   let hdr1=`<tr>
-    <th class="cat-h" rowspan="2" style="text-align:left;padding:6px 10px;min-width:140px;position:sticky;left:0;z-index:3">대상교</th>
-    <th class="cat-h" rowspan="2" style="min-width:48px">권역</th>`;
-  catGroups.forEach(g=>hdr1+=`<th class="${g.cat}" colspan="${g.count}" style="padding:5px 4px">${catLabel[g.cat]}</th>`);
-  hdr1+=`<th class="cat-h" rowspan="2" style="min-width:60px">완료율</th></tr>`;
+    <th class="cat-h" rowspan="2" style="text-align:left;padding:6px 10px;min-width:160px;position:sticky;left:0;top:0;z-index:5;font-size:12px">대상교</th>
+    <th class="cat-h" rowspan="2" style="min-width:52px;position:sticky;top:0;z-index:4;font-size:12px">권역</th>`;
+  catGroups.forEach(g=>hdr1+=`<th class="${g.cat}" colspan="${g.count}" style="padding:6px 4px;position:sticky;top:0;z-index:4;font-size:12px;font-weight:700">${catLabel[g.cat]}</th>`);
+  hdr1+=`<th class="cat-h" rowspan="2" style="min-width:64px;position:sticky;top:0;z-index:4;font-size:12px">완료율</th></tr>`;
 
   let hdr2='<tr>';
-  cols.forEach(c=>`${c}` && (hdr2+=`<th class="vhdr ${c.cat}" title="${c.tip}"><span class="vt">${c.label}</span></th>`));
+  cols.forEach(c=>{ hdr2+=`<th class="vhdr ${c.cat}" title="${c.tip}" style="position:sticky;top:${ROW1H}px;z-index:4"><span class="vt">${c.label}</span></th>`; });
   hdr2+='</tr>';
 
   let tbody='';
@@ -1471,18 +1529,16 @@ function buildStatusScreen(){
     cols.forEach(col=>{
       if(col.isGroup){
         row+=c3Any?`<td class="ovt-o">O</td>`:`<td class="ovt-x">X</td>`;
+      } else if(col.key==='seismic'){
+        const v=d[col.key];
+        row+= v&&v!=='X' ? `<td class="ovt-yr">${v}</td>` : `<td class="ovt-na">—</td>`;
       } else {
         const item=CHECKLIST.find(x=>x.key===col.key);
         const v=d[col.key];
-        if(item?.priv&&s.type==='사립'){
-          row+=`<td class="ovt-na">미존재</td>`;
-        } else if(!v||v==='X'){
-          row+=`<td class="ovt-x">X</td>`;
-        } else if(v==='O'){
-          row+=`<td class="ovt-o">O</td>`;
-        } else {
-          row+=`<td class="ovt-yr">${v}</td>`;
-        }
+        if(item?.priv&&s.type==='사립') row+=`<td class="ovt-na">미존재</td>`;
+        else if(!v||v==='X') row+=`<td class="ovt-x">X</td>`;
+        else if(v==='O') row+=`<td class="ovt-o">O</td>`;
+        else row+=`<td class="ovt-yr">${v}</td>`;
       }
     });
 
@@ -1518,7 +1574,7 @@ function exportExcel(){
     const area=key=>{ const v=d[key+'_area']; if(v) return v+'㎡'; return g(key); };
     data.push([i+1,s.region,s.area,s.type,s.school,s.building,
       g('overview'),g('drawing'),area('building'),area('public'),g('student'),g('standard'),
-      yrpd('type3'),gr('type3'),yrpd('detail'),gr('detail'),yrpd('precise'),gr('precise'),yr('seismic'),g('seismic'),
+      yrpd('type3'),gr('type3'),yrpd('detail'),gr('detail'),yrpd('precise'),gr('precise'),yr('seismic'),'-',
       g('maint'),g('realmap'),g('interview')]);
   });
   const ws=XLSX.utils.aoa_to_sheet(data);
