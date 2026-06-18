@@ -1141,15 +1141,19 @@ function renderBulkTable(){
     const sel=f._sid
       ?`<select class="rt-sel" onchange="setBulkSid(${i},this.value)">${visSchools.map(s=>`<option value="${s.id}"${s.id===f._sid?' selected':''}>${sLabel(s)}</option>`).join('')}</select>${f._ambig?'<span style="font-size:10px;color:var(--amber)"> ⚠️복수</span>':''}`
       :`<select class="rt-sel" style="border-color:var(--amber)" onchange="setBulkSid(${i},this.value)"><option value="">⚠️ 건물동 선택 필요</option>${opts}</select>`;
-    const inspCell = f._inspLoading
+    const inspCell = f._inspLoading||f._bldgLoading
       ? `<span style="font-size:11px;color:#854d0e">⏳분석중</span>`
-      : f._insp?.scanned
+      : f._insp?.scanned||f._bldg?.scanned
         ? `<span style="font-size:11px;color:var(--red)">📷스캔PDF</span>`
         : f._insp?.grade
           ? `<span style="font-size:11px;color:#6d28d9">${f._insp.year||''}년 ${f._insp.period||''}<br>${f._insp.grade}등급</span>`
           : f._insp
             ? `<span style="font-size:11px;color:var(--amber)">⚠️미감지</span>`
-            : `<span style="font-size:11px;color:var(--gray)">—</span>`;
+            : f._bldg?.pairs?.length
+              ? f._bldg.pairs.map(p=>`<span style="font-size:11px;color:#0369a1">🏢 ${p.area}㎡${p.school?'':' ⚠️'}</span>`).join('<br>')
+              : f._bldg
+                ? `<span style="font-size:11px;color:var(--amber)">⚠️연면적 미감지</span>`
+                : `<span style="font-size:11px;color:var(--gray)">—</span>`;
     return `<tr>
       <td style="color:var(--gray);font-size:11px">${i+1}</td>
       <td>${icon} ${f.name}<br><span style="font-size:11px;color:var(--gray)">${fmtSz(f.size)}</span></td>
