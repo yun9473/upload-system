@@ -278,6 +278,13 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
 
         <div id="pa-banner" class="pa-banner warn">⚠️ Power Automate URL 미설정</div>
 
+        <!-- 업로드 실패 대비 안내 -->
+        <div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:9px;padding:10px 16px;margin-bottom:14px;font-size:13px;color:#7c5200;line-height:1.8">
+          📬 <strong>업로드 오류 발생 시</strong> — 파일을 아래 메일로 직접 전송해 주세요<br>
+          <span style="font-size:15px;font-weight:800;color:#c0392b;letter-spacing:.5px">KEGE_1HQ@kege.or.kr</span>
+          <span style="font-size:11px;color:#7c5200;margin-left:8px">(업로드 실패 시 자동으로 ZIP 다운로드 안내가 표시됩니다)</span>
+        </div>
+
         <!-- Agency tabs -->
         <div id="ag-tabs" style="display:none;margin-bottom:14px">
           <div style="display:flex;gap:8px">
@@ -1095,8 +1102,10 @@ async function doSchoolUpload(){
     setPg('school','완료',100);
     setTimeout(()=>{ document.getElementById('pg-school').classList.remove('on'); document.getElementById('pg-school-f').style.width='0'; },2500);
     if(errors.length){
-      toast(`${errors.length}개 실패 (목록에 유지됨) — ${errors[0]}`,'error');
-      schoolFiles=failedFiles; // 실패 파일만 남겨 재시도 가능
+      toast(`${errors.length}개 실패 — ZIP 다운로드 후 메일 전송해 주세요`,'error');
+      schoolFiles=failedFiles;
+      const s=SCHOOLS.find(x=>x.id===curSchoolId);
+      showUploadFailureModal(failedFiles, s?.school||'학교');
     } else {
       toast(`${snapshot.length}개 파일 업로드 완료!`,'success');
       schoolFiles=[];
@@ -1217,8 +1226,9 @@ async function doBulkUpload(){
     setPg('bulk','완료',100);
     setTimeout(()=>{ document.getElementById('pg-bulk').classList.remove('on'); document.getElementById('pg-bulk-f').style.width='0'; },2500);
     if(errors.length){
-      toast(`${errors.length}개 실패 (목록에 유지됨) — ${errors[0]}`,'error');
+      toast(`${errors.length}개 실패 — ZIP 다운로드 후 메일 전송해 주세요`,'error');
       bulkFiles=failedFiles;
+      showUploadFailureModal(failedFiles, '일괄업로드');
     } else {
       toast(`${snapshot.length}개 파일 일괄 업로드 완료!`,'success');
       bulkFiles=[];
@@ -1572,6 +1582,44 @@ function confirmReset(){
   document.getElementById('mbg').classList.add('open');
 }
 function closeModal(){ document.getElementById('mbg').classList.remove('open'); }
+
+// ════════════════════════════════════
+// 업로드 실패 시 ZIP 다운로드 + 이메일 안내
+// ════════════════════════════════════
+async function downloadFailedAsZip(files, label){
+  const zip = new JSZip();
+  for(const f of files){
+    const buf = await f.arrayBuffer().catch(()=>null);
+    if(buf) zip.file(f.name, buf);
+  }
+  const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `업로드실패_${label}_${new Date().toISOString().slice(0,10)}.zip`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+}
+
+function showUploadFailureModal(failedFiles, label){
+  document.getElementById('m-title').textContent='⚠️ 업로드 실패 — 이메일 전송 안내';
+  document.getElementById('m-body').innerHTML=`
+    <div style="font-size:13px;line-height:1.9">
+      <b>${failedFiles.length}개 파일</b>이 SharePoint 업로드에 실패했습니다.<br>
+      아래 버튼으로 실패 파일을 ZIP으로 다운받아<br>
+      <span style="font-size:15px;font-weight:800;color:#c0392b">KEGE_1HQ@kege.or.kr</span><br>
+      으로 직접 이메일 첨부해 보내주세요.<br><br>
+      <ul style="padding-left:16px;font-size:12px;color:#475569">
+        ${failedFiles.map(f=>`<li>${f.name}</li>`).join('')}
+      </ul>
+    </div>`;
+  document.getElementById('m-ok').textContent='📦 ZIP 다운로드';
+  document.getElementById('m-ok').onclick=async ()=>{
+    await downloadFailedAsZip(failedFiles, label);
+    closeModal();
+  };
+  document.getElementById('mbg').classList.add('open');
+}
 
 // ════════════════════════════════════
 // NAV / UTILS
