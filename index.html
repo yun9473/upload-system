@@ -583,6 +583,7 @@ const FOLDER_KW = [
 // ════════════════════════════════════
 let role='school', visIds=[], curSchoolId=null, schoolFiles=[], bulkFiles=[];
 let serverCfg = {}; // 서버에서 받아온 공유 설정
+let uploading = false; // 업로드 진행 중 플래그
 
 // ════════════════════════════════════
 // CONFIG / STORE
@@ -1054,7 +1055,7 @@ function renderSchoolFiles(){
           ${inspPill}${bldgPill}${warn}
         </div>
       </div>
-      <button class="fremove" onclick="removeSchoolFile(${i})">✕</button>
+      ${uploading?'<span style="width:24px"></span>':`<button class="fremove" onclick="removeSchoolFile(${i})">✕</button>`}
     </div>`;
   }).join('');
 }
@@ -1067,26 +1068,42 @@ async function doSchoolUpload(){
   if(!curSchoolId||!schoolFiles.length) return;
   const paUrl=(cfg().paUrl||'').trim();
   if(!paUrl){ toast('Power Automate URL을 먼저 설정해주세요','error'); return; }
+  if(schoolFiles.some(f=>f._inspLoading||f._bldgLoading)){
+    toast('PDF 분석이 아직 진행 중입니다. 잠시 후 다시 시도해주세요.','error'); return;
+  }
   const s=SCHOOLS.find(x=>x.id===curSchoolId);
   const base=(cfg().basePath||'').replace(/\/$/,'');
   const schoolFolder=`${base?base+'/':''}07. 학교별 평가표/${sLabel(s)}`;
   const btn=document.getElementById('btn-school-up');
-  btn.disabled=true;
-  let done=0, errors=[];
-  for(const f of schoolFiles){
-    setPg('school',f.name,Math.round(done/schoolFiles.length*100));
-    try{
-      await uploadViaPA(paUrl,f,`${schoolFolder}/${f._folder}/${f.name}`);
-      updateCLfromFile(curSchoolId,f);
-    }catch(e){ errors.push(`${f.name}: ${e instanceof Error?e.message:String(e)}`); }
-    done++;
+  const snapshot=[...schoolFiles]; // 업로드 중 목록 변경 방지
+  btn.disabled=true; uploading=true; renderSchoolFiles();
+  let done=0, failedFiles=[], errors=[];
+  try{
+    for(const f of snapshot){
+      setPg('school',f.name,Math.round(done/snapshot.length*100));
+      try{
+        await uploadViaPA(paUrl,f,`${schoolFolder}/${f._folder}/${f.name}`);
+        updateCLfromFile(curSchoolId,f);
+      }catch(e){
+        failedFiles.push(f);
+        errors.push(`${f.name}: ${e instanceof Error?e.message:String(e)}`);
+      }
+      done++;
+    }
+  }finally{
+    uploading=false;
+    setPg('school','완료',100);
+    setTimeout(()=>{ document.getElementById('pg-school').classList.remove('on'); document.getElementById('pg-school-f').style.width='0'; },2500);
+    if(errors.length){
+      toast(`${errors.length}개 실패 (목록에 유지됨) — ${errors[0]}`,'error');
+      schoolFiles=failedFiles; // 실패 파일만 남겨 재시도 가능
+    } else {
+      toast(`${snapshot.length}개 파일 업로드 완료!`,'success');
+      schoolFiles=[];
+    }
+    renderSchoolFiles(); buildChecklist(curSchoolId); buildSidebar();
+    btn.disabled=schoolFiles.length===0;
   }
-  setPg('school','완료',100);
-  setTimeout(()=>{ document.getElementById('pg-school').classList.remove('on'); document.getElementById('pg-school-f').style.width='0'; },2500);
-  if(errors.length) toast(`${errors.length}개 실패: ${errors[0]}`,'error');
-  else toast(`${schoolFiles.length}개 파일 업로드 완료!`,'success');
-  schoolFiles=[]; renderSchoolFiles(); buildChecklist(curSchoolId); buildSidebar();
-  btn.disabled=false;
 }
 
 // ════════════════════════════════════
@@ -1161,7 +1178,7 @@ function renderBulkTable(){
       <td style="font-size:11px;color:var(--gray)">${f._folder}</td>
       <td>${inspCell}</td>
       <td style="font-size:11px;color:var(--gray)">${fmtSz(f.size)}</td>
-      <td><button class="fremove" onclick="removeBulk(${i})">✕</button></td>
+      <td>${uploading?'':`<button class="fremove" onclick="removeBulk(${i})">✕</button>`}</td>
     </tr>`;
   }).join('');
 }
@@ -1173,25 +1190,42 @@ async function doBulkUpload(){
   if(!paUrl){ toast('Power Automate URL을 먼저 설정해주세요','error'); return; }
   const unassigned=bulkFiles.filter(f=>!f._sid);
   if(unassigned.length){ toast(`${unassigned.length}개 파일에 학교를 지정해주세요`,'error'); return; }
-  document.getElementById('btn-bulk').disabled=true;
-  const base=(cfg().basePath||'').replace(/\/$/,'');
-  let done=0, errors=[];
-  for(const f of bulkFiles){
-    const s=SCHOOLS.find(x=>x.id===f._sid);
-    const path=`${base?base+'/':''}07. 학교별 평가표/${sLabel(s)}/${f._folder}/${f.name}`;
-    setPg('bulk',`[${s.school}] ${f.name}`,Math.round(done/bulkFiles.length*100));
-    try{
-      await uploadViaPA(paUrl,f,path);
-      updateCLfromFile(f._sid,f);
-    }catch(e){ errors.push(`${f.name}: ${e instanceof Error?e.message:String(e)}`); }
-    done++;
+  if(bulkFiles.some(f=>f._inspLoading||f._bldgLoading)){
+    toast('PDF 분석이 아직 진행 중입니다. 잠시 후 다시 시도해주세요.','error'); return;
   }
-  setPg('bulk','완료',100);
-  setTimeout(()=>{ document.getElementById('pg-bulk').classList.remove('on'); document.getElementById('pg-bulk-f').style.width='0'; },2500);
-  if(errors.length) toast(`${errors.length}개 실패`,'error');
-  else toast(`${bulkFiles.length}개 파일 일괄 업로드 완료!`,'success');
-  bulkFiles=[]; renderBulkTable(); buildSidebar();
-  document.getElementById('btn-bulk').disabled=false;
+  const btn=document.getElementById('btn-bulk');
+  const snapshot=[...bulkFiles];
+  btn.disabled=true; uploading=true; renderBulkTable();
+  const base=(cfg().basePath||'').replace(/\/$/,'');
+  let done=0, failedFiles=[], errors=[];
+  try{
+    for(const f of snapshot){
+      const s=SCHOOLS.find(x=>x.id===f._sid);
+      const path=`${base?base+'/':''}07. 학교별 평가표/${sLabel(s)}/${f._folder}/${f.name}`;
+      setPg('bulk',`[${s.school}] ${f.name}`,Math.round(done/snapshot.length*100));
+      try{
+        await uploadViaPA(paUrl,f,path);
+        updateCLfromFile(f._sid,f);
+      }catch(e){
+        failedFiles.push(f);
+        errors.push(`${f.name}: ${e instanceof Error?e.message:String(e)}`);
+      }
+      done++;
+    }
+  }finally{
+    uploading=false;
+    setPg('bulk','완료',100);
+    setTimeout(()=>{ document.getElementById('pg-bulk').classList.remove('on'); document.getElementById('pg-bulk-f').style.width='0'; },2500);
+    if(errors.length){
+      toast(`${errors.length}개 실패 (목록에 유지됨) — ${errors[0]}`,'error');
+      bulkFiles=failedFiles;
+    } else {
+      toast(`${snapshot.length}개 파일 일괄 업로드 완료!`,'success');
+      bulkFiles=[];
+    }
+    renderBulkTable(); buildSidebar();
+    btn.disabled=false;
+  }
 }
 
 // ════════════════════════════════════
@@ -1202,14 +1236,24 @@ async function uploadViaPA(paUrl, file, fullPath){
   const fileName=parts.pop();
   const folderPath=parts.join('/');
   const b64=await fileToBase64(file);
-  const res=await fetch(paUrl,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({fileName, folderPath, fileContent:b64}),
-  });
-  if(!res.ok){
-    const txt=await res.text().catch(()=>'');
-    throw new Error(`오류 ${res.status}${txt?' — '+txt.slice(0,60):''}`);
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(), 120000); // 120초 타임아웃
+  try{
+    const res=await fetch(paUrl,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({fileName, folderPath, fileContent:b64}),
+      signal:controller.signal,
+    });
+    if(!res.ok){
+      const txt=await res.text().catch(()=>'');
+      throw new Error(`오류 ${res.status}${txt?' — '+txt.slice(0,60):''}`);
+    }
+  }catch(e){
+    if(e.name==='AbortError') throw new Error('업로드 시간 초과(120초) — 파일 크기 확인 또는 네트워크 점검');
+    throw e;
+  }finally{
+    clearTimeout(timer);
   }
 }
 
