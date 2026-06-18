@@ -1150,7 +1150,7 @@ function renderBulkTable(){
           : f._insp
             ? `<span style="font-size:11px;color:var(--amber)">⚠️미감지</span>`
             : f._bldg?.pairs?.length
-              ? f._bldg.pairs.map(p=>`<span style="font-size:11px;color:#0369a1">🏢 ${p.area}㎡${p.school?'':' ⚠️'}</span>`).join('<br>')
+              ? f._bldg.pairs.map(p=>`<span style="font-size:11px;color:#0369a1">🏢 ${p.area}㎡</span>`).join('<br>')
               : f._bldg
                 ? `<span style="font-size:11px;color:var(--amber)">⚠️연면적 미감지</span>`
                 : `<span style="font-size:11px;color:var(--gray)">—</span>`;
