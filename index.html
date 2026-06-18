@@ -1790,6 +1790,7 @@ function showScreen(n){
   const mi=document.getElementById('mi-'+n); if(mi) mi.classList.add('active');
   if(n==='status') buildStatusScreen();
   if(n==='admin')  buildCodeTable();
+  document.querySelector('.main').scrollTop=0;
 }
 function setPg(which,text,pct){
   document.getElementById('pg-'+which).classList.add('on');
