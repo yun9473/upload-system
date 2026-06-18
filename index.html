@@ -205,13 +205,32 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
   <div class="lcard">
     <div class="llogo">📂</div>
     <div class="ltitle">기초자료 수신 관리 시스템</div>
-    <div class="lsub">2026 개축타당성 평가 연구용역</div>
-    <div class="ltabs">
-      <button class="ltab active" onclick="switchLTab('school',this)">🏫 학교</button>
-      <button class="ltab" onclick="switchLTab('agency',this)">🏛️ 발주청</button>
-      <button class="ltab" onclick="switchLTab('admin',this)">⚙️ 관리자</button>
+    <div class="lsub" id="l-sub">프로젝트를 선택하세요</div>
+
+    <!-- 프로젝트 선택 단계 -->
+    <div id="lp-proj-step">
+      <div class="fg">
+        <label class="fl">교육청 / 프로젝트 선택</label>
+        <select class="fi" id="l-proj" onchange="onProjSelect(this.value)" style="cursor:pointer">
+          <option value="">⏳ 목록 불러오는 중...</option>
+        </select>
+      </div>
+      <button class="btn btn-p btn-fw" id="btn-proj-next" onclick="confirmProject()" disabled>다음 →</button>
     </div>
-    <div id="lp-school">
+
+    <!-- 로그인 탭 (프로젝트 선택 후 표시) -->
+    <div id="lp-login-step" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:var(--blue-l);border-radius:8px;font-size:13px">
+        <span>📁</span>
+        <span id="l-proj-badge" style="font-weight:600;color:var(--blue);flex:1"></span>
+        <button onclick="backToProject()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--gray)">← 변경</button>
+      </div>
+      <div class="ltabs">
+        <button class="ltab active" onclick="switchLTab('school',this)">🏫 학교</button>
+        <button class="ltab" onclick="switchLTab('agency',this)">🏛️ 발주청</button>
+        <button class="ltab" onclick="switchLTab('admin',this)">⚙️ 관리자</button>
+      </div>
+      <div id="lp-school">
       <div class="fg"><label class="fl">아이디 (학교명)</label>
         <input class="fi" id="l-sid" type="text" placeholder="예: 동성중" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('l-spw').focus()"/>
       </div>
@@ -239,6 +258,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
       <button class="btn btn-p btn-fw" onclick="loginAdmin()">로그인</button>
     </div>
     <div class="lerr" id="lerr"></div>
+    </div><!-- /lp-login-step -->
   </div>
 </div>
 
@@ -480,6 +500,38 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
           </div>
         </div>
 
+        <div class="card">
+          <div class="card-title">📁 프로젝트 관리
+            <button class="btn btn-g btn-sm" style="margin-left:auto" onclick="showAddProject()">＋ 새 프로젝트</button>
+          </div>
+          <div style="font-size:12px;color:var(--gray);margin-bottom:10px">
+            Excel 서식을 업로드하면 새 교육청 프로젝트가 추가됩니다.<br>
+            <strong>Excel 열 순서:</strong> 순번 · 학교명 · 건물동명 · 권역 · 지역 · 유형(공립/사립)
+          </div>
+          <div id="proj-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+
+          <!-- 새 프로젝트 폼 (숨김) -->
+          <div id="proj-add-form" style="display:none;border:1.5px solid var(--blue);border-radius:9px;padding:14px;background:var(--blue-l)">
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--blue)">새 프로젝트 추가</div>
+            <div class="fg"><label class="fl">교육청명</label><input class="fi" id="pf-office" placeholder="예: 서울특별시교육청"/></div>
+            <div class="fg"><label class="fl">프로젝트명</label><input class="fi" id="pf-name" placeholder="예: 2026 개축타당성 평가 연구용역"/></div>
+            <div class="fg"><label class="fl">연도</label><input class="fi" id="pf-year" type="number" placeholder="2026" value="2026"/></div>
+            <div class="fg">
+              <label class="fl">학교 목록 Excel 업로드</label>
+              <div class="dz" id="dz-proj" style="padding:20px" onclick="document.getElementById('fi-proj').click()">
+                <input type="file" id="fi-proj" accept=".xlsx,.xls" style="display:none" onchange="onProjExcel(this)"/>
+                <span style="font-size:13px">📊 Excel 파일을 클릭하거나 끌어다 놓으세요</span>
+                <div id="proj-excel-preview" style="margin-top:8px;font-size:12px;color:var(--blue)"></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-p btn-sm" onclick="saveNewProject()">💾 저장</button>
+              <button class="btn btn-o btn-sm" onclick="document.getElementById('proj-add-form').style.display='none'">취소</button>
+              <span id="proj-save-status" style="font-size:12px;color:var(--gray);align-self:center"></span>
+            </div>
+          </div>
+        </div>
+
         <div class="card" style="background:var(--red-l);border:1px solid #fca5a5">
           <div class="card-title">⚠️ 체크리스트 초기화</div>
           <div style="font-size:13px;color:var(--text2);margin-bottom:10px">저장된 수신 현황을 초기화합니다. SharePoint 파일은 유지됩니다.</div>
@@ -506,7 +558,8 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
 // ════════════════════════════════════
 // MASTER DATA
 // ════════════════════════════════════
-const SCHOOLS = [
+// 프로젝트 로드 후 덮어씌워짐 (초기값: 빈 배열)
+let SCHOOLS = [
   {id:1,  disp:21, school:'효촌초',     building:'본관동',            region:'1권역', area:'동두천양주', type:'공립', phone:''},
   {id:2,  disp:22, school:'능곡초',     building:'본관',              region:'1권역', area:'고양',      type:'공립', phone:''},
   {id:3,  disp:23, school:'능곡초',     building:'별관',              region:'1권역', area:'고양',      type:'공립', phone:''},
@@ -543,9 +596,7 @@ const SCHOOLS = [
 
 const sLabel = s => `${String(s.disp).padStart(2,'0')}. ${s.school} ${s.building}`;
 
-// 학교별 1코드 → 해당 학교 전체 동 접근
-// 동이 여러 개인 학교: 같은 코드에 모든 ID 포함
-const DEFAULT_CODES = {
+let DEFAULT_CODES = {
   '동성중'   : [31,32],
   '삼일고'   : [21],
   '명학초'   : [23],
@@ -607,20 +658,24 @@ const FOLDER_KW = [
 // STATE
 // ════════════════════════════════════
 let role='school', visIds=[], curSchoolId=null, schoolFiles=[], bulkFiles=[];
-let serverCfg = {}; // 서버에서 받아온 공유 설정
-let uploading = false; // 업로드 진행 중 플래그
+let serverCfg = {};
+let uploading = false;
+let currentProject = null;  // 현재 선택된 프로젝트
+let allProjects = [];        // 전체 프로젝트 목록 (index.json)
 
 // ════════════════════════════════════
 // CONFIG / STORE
 // ════════════════════════════════════
 const cfg = () => ({...JSON.parse(localStorage.getItem('bzCfg')||'{}'), ...serverCfg});
 const saveCfg = o => localStorage.setItem('bzCfg', JSON.stringify({...cfg(),...o}));
-const getCL = () => JSON.parse(localStorage.getItem('bzCL')||'{}');
+// 체크리스트 데이터는 프로젝트별로 분리 저장
+const clKey = () => `bzCL_${currentProject?.id||'default'}`;
+const getCL = () => JSON.parse(localStorage.getItem(clKey())||'{}');
 const setCLv = (sid,key,val) => {
   const d=getCL(); if(!d[sid]) d[sid]={};
-  d[sid][key]=val; localStorage.setItem('bzCL',JSON.stringify(d));
+  d[sid][key]=val; localStorage.setItem(clKey(),JSON.stringify(d));
 };
-const getSchoolCodes = () => cfg().schoolCodes || DEFAULT_CODES;
+const getSchoolCodes = () => currentProject?.codes || cfg().schoolCodes || DEFAULT_CODES;
 
 // ════════════════════════════════════
 // INSPECTION INFO EXTRACTION
@@ -882,12 +937,64 @@ function fileToBase64(file){
 // ════════════════════════════════════
 // LOGIN
 // ════════════════════════════════════
+// ════════════════════════════════════
+// 프로젝트 로딩
+// ════════════════════════════════════
+const RAW='https://raw.githubusercontent.com/yun9473/upload-system/main';
+
+async function initProjectList(){
+  const sel=document.getElementById('l-proj');
+  try{
+    const r=await fetch(`${RAW}/data/projects/index.json?_=${Date.now()}`);
+    if(!r.ok) throw new Error();
+    allProjects=await r.json();
+    sel.innerHTML='<option value="">— 프로젝트를 선택하세요 —</option>'+
+      allProjects.map(p=>`<option value="${p.id}">[${p.교육청}] ${p.name} (${p.year})</option>`).join('');
+  }catch{
+    sel.innerHTML='<option value="">⚠️ 목록 로드 실패 — 새로고침</option>';
+  }
+}
+
+function onProjSelect(id){
+  document.getElementById('btn-proj-next').disabled=!id;
+}
+
+async function confirmProject(){
+  const id=document.getElementById('l-proj').value;
+  if(!id) return;
+  const btn=document.getElementById('btn-proj-next');
+  btn.disabled=true; btn.textContent='불러오는 중…';
+  try{
+    const r=await fetch(`${RAW}/data/projects/${id}.json?_=${Date.now()}`);
+    if(!r.ok) throw new Error();
+    currentProject=await r.json();
+    SCHOOLS=currentProject.schools.slice().sort((a,b)=>a.disp-b.disp);
+    DEFAULT_CODES=currentProject.codes||{};
+    // 로그인 단계로 전환
+    document.getElementById('lp-proj-step').style.display='none';
+    document.getElementById('lp-login-step').style.display='block';
+    document.getElementById('l-proj-badge').textContent=`[${currentProject.교육청}] ${currentProject.name} (${currentProject.year})`;
+    document.getElementById('l-sub').textContent=currentProject.name;
+  }catch{
+    alert('프로젝트를 불러오지 못했습니다. 다시 시도해주세요.');
+  }
+  btn.disabled=false; btn.textContent='다음 →';
+}
+
+function backToProject(){
+  currentProject=null; SCHOOLS=[]; DEFAULT_CODES={};
+  document.getElementById('lp-proj-step').style.display='block';
+  document.getElementById('lp-login-step').style.display='none';
+  document.getElementById('lerr').textContent='';
+}
+
 function switchLTab(tab,el){
   document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   ['school','agency','admin'].forEach(t=>{document.getElementById('lp-'+t).style.display=t===tab?'block':'none';});
 }
 function loginSchool(){
+  if(!currentProject){ document.getElementById('lerr').textContent='프로젝트를 먼저 선택해주세요.'; return; }
   const id=document.getElementById('l-sid').value.trim();
   const pw=document.getElementById('l-spw').value.trim();
   if(pw!==(cfg().schoolPw||'1234')){ document.getElementById('lerr').textContent='비밀번호가 틀렸습니다.'; return; }
@@ -897,6 +1004,7 @@ function loginSchool(){
   else document.getElementById('lerr').textContent='학교명이 올바르지 않습니다.';
 }
 function loginAgency(){
+  if(!currentProject){ document.getElementById('lerr').textContent='프로젝트를 먼저 선택해주세요.'; return; }
   const id=document.getElementById('l-aid').value.trim();
   const pw=document.getElementById('l-apw').value.trim();
   if(!id){ document.getElementById('lerr').textContent='교육청명을 입력하세요.'; return; }
@@ -908,11 +1016,13 @@ function loginAdmin(){
   const pw=document.getElementById('l-adpw').value.trim();
   if(id!==(cfg().adminId||'kege')){ document.getElementById('lerr').textContent='아이디가 틀렸습니다.'; return; }
   if(pw!==(cfg().adminPw||'0381')){ document.getElementById('lerr').textContent='비밀번호가 틀렸습니다.'; return; }
+  // 관리자는 프로젝트 없이도 로그인 가능 (프로젝트 관리 목적)
+  if(!currentProject){ SCHOOLS=[]; DEFAULT_CODES={}; }
   role='admin'; visIds=SCHOOLS.map(s=>s.id); startApp('관리자');
 }
 
 async function startApp(label){
-  localStorage.setItem('bzSession', JSON.stringify({role, visIds, label}));
+  localStorage.setItem('bzSession', JSON.stringify({role, visIds, label, projectId: currentProject?.id||null}));
   await loadServerConfig();
   document.getElementById('screen-login').style.display='none';
   document.getElementById('screen-app').style.display='flex';
@@ -947,6 +1057,10 @@ function logout(){
   document.getElementById('screen-login').style.display='flex';
   document.getElementById('screen-app').style.display='none';
   role='school'; visIds=[]; curSchoolId=null; schoolFiles=[]; bulkFiles=[];
+  currentProject=null; SCHOOLS=[]; DEFAULT_CODES={};
+  // 프로젝트 선택 화면으로 복귀
+  document.getElementById('lp-proj-step').style.display='block';
+  document.getElementById('lp-login-step').style.display='none';
   document.getElementById('mi-admin').style.display='none';
   document.getElementById('ag-tabs').style.display='none';
   document.getElementById('school-info-box').style.display='none';
@@ -1610,6 +1724,7 @@ function exportExcel(){
 // ════════════════════════════════════
 function loadAdminForm(){
   if(role!=='admin') return;
+  buildProjectList();
   const c=cfg();
   document.getElementById('a-paurl').value=c.paUrl||'';
   document.getElementById('a-basepath').value=c.basePath||'';
@@ -1727,7 +1842,7 @@ function confirmReset(){
   document.getElementById('m-title').textContent='체크리스트 초기화';
   document.getElementById('m-body').textContent='모든 수신 현황이 초기화됩니다. SharePoint 파일은 유지됩니다.';
   document.getElementById('m-ok').onclick=()=>{
-    localStorage.removeItem('bzCL');
+    localStorage.removeItem(clKey());
     schoolFiles=[]; bulkFiles=[];
     renderSchoolFiles(); renderBulkTable();
     closeModal(); toast('초기화 완료','info'); buildSidebar();
@@ -1809,10 +1924,131 @@ function toast(msg,type='info'){
 // ════════════════════════════════════
 // 세션 복원 (새로고침 유지)
 // ════════════════════════════════════
-(function restoreSession(){
+// ════════════════════════════════════
+// 프로젝트 관리 (관리자)
+// ════════════════════════════════════
+let parsedProjectSchools = null;
+
+function showAddProject(){
+  document.getElementById('proj-add-form').style.display='block';
+  parsedProjectSchools=null;
+  document.getElementById('proj-excel-preview').textContent='';
+}
+
+function onProjExcel(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1}).filter(r=>r.length>1);
+      // 헤더 행 건너뜀 (첫 셀이 숫자가 아니면 헤더로 판단)
+      const data=rows.filter(r=>!isNaN(parseInt(r[0])));
+      parsedProjectSchools=data.map((r,i)=>({
+        id:i+1, disp:parseInt(r[0])||i+1,
+        school:String(r[1]||'').trim(),
+        building:String(r[2]||'').trim(),
+        region:String(r[3]||'').trim(),
+        area:String(r[4]||'').trim(),
+        type:String(r[5]||'공립').trim(),
+      })).filter(s=>s.school);
+      // 접속코드 자동 생성: 학교명별로 id 묶기
+      const codesMap={};
+      parsedProjectSchools.forEach(s=>{
+        if(!codesMap[s.school]) codesMap[s.school]=[];
+        codesMap[s.school].push(s.id);
+      });
+      parsedProjectSchools._codes=codesMap;
+      document.getElementById('proj-excel-preview').innerHTML=
+        `✅ ${parsedProjectSchools.length}개 건물동 파싱 완료 (학교 ${Object.keys(codesMap).length}개교)`;
+    }catch(err){
+      document.getElementById('proj-excel-preview').innerHTML='❌ 파싱 오류: '+err.message;
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function saveNewProject(){
+  const office=document.getElementById('pf-office').value.trim();
+  const name=document.getElementById('pf-name').value.trim();
+  const year=parseInt(document.getElementById('pf-year').value)||new Date().getFullYear();
+  if(!office||!name){ alert('교육청명과 프로젝트명을 입력해주세요.'); return; }
+  if(!parsedProjectSchools||!parsedProjectSchools.length){ alert('Excel 파일을 먼저 업로드해주세요.'); return; }
+  const id=(office.replace(/\s/g,'_')+'_'+year).toLowerCase();
+  const projectData={id, name, 교육청:office, year,
+    schools:parsedProjectSchools.map(({_codes,...s})=>s),
+    codes:parsedProjectSchools._codes||{}};
+  const status=document.getElementById('proj-save-status');
+  status.textContent='저장 중…';
+  try{
+    const res=await fetch('/api/save-project',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'save', id, data:projectData})
+    });
+    const json=await res.json();
+    if(!res.ok) throw new Error(json.error);
+    status.textContent='✅ 저장 완료!';
+    toast(`프로젝트 "${name}" 저장 완료`,'success');
+    document.getElementById('proj-add-form').style.display='none';
+    // index 갱신
+    await initProjectList();
+    buildProjectList();
+  }catch(e){ status.textContent='❌ 오류: '+e.message; }
+}
+
+async function buildProjectList(){
+  const el=document.getElementById('proj-list');
+  if(!el) return;
+  // 잠시 후 GitHub에서 최신 목록 가져오기
+  try{
+    const r=await fetch(`${RAW}/data/projects/index.json?_=${Date.now()}`);
+    if(!r.ok) throw new Error();
+    allProjects=await r.json();
+  }catch{ /* 캐시 사용 */ }
+  if(!allProjects.length){ el.innerHTML='<div style="font-size:12px;color:var(--gray)">등록된 프로젝트가 없습니다.</div>'; return; }
+  el.innerHTML=allProjects.map(p=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--gray-l);border-radius:7px;font-size:13px">
+      <span style="flex:1"><strong>${p.교육청}</strong> — ${p.name} (${p.year})</span>
+      <button class="btn btn-r btn-sm" onclick="deleteProject('${p.id}','${p.name}')">삭제</button>
+    </div>`).join('');
+}
+
+async function deleteProject(id, name){
+  if(!confirm(`"${name}" 프로젝트를 삭제하시겠습니까?\n(GitHub의 파일이 삭제됩니다)`)) return;
+  try{
+    const res=await fetch('/api/save-project',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'delete', id})
+    });
+    const json=await res.json();
+    if(!res.ok) throw new Error(json.error);
+    toast(`"${name}" 삭제 완료`,'info');
+    await initProjectList();
+    buildProjectList();
+  }catch(e){ toast('삭제 실패: '+e.message,'error'); }
+}
+
+// ════════════════════════════════════
+// 세션 복원 (새로고침 유지)
+// ════════════════════════════════════
+(async function restoreSession(){
+  // 프로젝트 목록 먼저 로드
+  await initProjectList();
   try{
     const s=JSON.parse(localStorage.getItem('bzSession')||'null');
     if(!s) return;
+    // 저장된 프로젝트 복원
+    if(s.projectId){
+      try{
+        const r=await fetch(`${RAW}/data/projects/${s.projectId}.json?_=${Date.now()}`);
+        if(r.ok){
+          currentProject=await r.json();
+          SCHOOLS=currentProject.schools.slice().sort((a,b)=>a.disp-b.disp);
+          DEFAULT_CODES=currentProject.codes||{};
+        }
+      }catch{}
+    }
     role=s.role; visIds=s.visIds;
     startApp(s.label);
   }catch(e){ localStorage.removeItem('bzSession'); }
