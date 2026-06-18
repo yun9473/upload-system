@@ -205,59 +205,78 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f1f5f9;
   <div class="lcard">
     <div class="llogo">📂</div>
     <div class="ltitle">기초자료 수신 관리 시스템</div>
-    <div class="lsub" id="l-sub">프로젝트를 선택하세요</div>
+    <div class="lsub" id="l-sub">로그인 유형을 선택하세요</div>
 
-    <!-- 프로젝트 선택 단계 -->
-    <div id="lp-proj-step">
-      <div class="fg">
-        <label class="fl">교육청 / 프로젝트 선택</label>
-        <select class="fi" id="l-proj" onchange="onProjSelect(this.value)" style="cursor:pointer">
-          <option value="">⏳ 목록 불러오는 중...</option>
-        </select>
-      </div>
-      <button class="btn btn-p btn-fw" id="btn-proj-next" onclick="confirmProject()" disabled>다음 →</button>
-    </div>
-
-    <!-- 로그인 탭 (프로젝트 선택 후 표시) -->
-    <div id="lp-login-step" style="display:none">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:var(--blue-l);border-radius:8px;font-size:13px">
-        <span>📁</span>
-        <span id="l-proj-badge" style="font-weight:600;color:var(--blue);flex:1"></span>
-        <button onclick="backToProject()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--gray)">← 변경</button>
-      </div>
+    <!-- 로그인 탭 (첫 화면 — 프로젝트 목록 노출 없음) -->
+    <div id="lp-login-step">
       <div class="ltabs">
         <button class="ltab active" onclick="switchLTab('school',this)">🏫 학교</button>
         <button class="ltab" onclick="switchLTab('agency',this)">🏛️ 발주청</button>
         <button class="ltab" onclick="switchLTab('admin',this)">⚙️ 관리자</button>
       </div>
+
+      <!-- 학교 탭 -->
       <div id="lp-school">
-      <div class="fg"><label class="fl">아이디 (학교명)</label>
-        <input class="fi" id="l-sid" type="text" placeholder="예: 동성중" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('l-spw').focus()"/>
+        <div class="fg"><label class="fl">아이디 (학교명)</label>
+          <input class="fi" id="l-sid" type="text" placeholder="예: 동성중" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('l-spw').focus()"/>
+        </div>
+        <div class="fg"><label class="fl">비밀번호</label>
+          <input class="fi" id="l-spw" type="password" placeholder="비밀번호 입력" autocomplete="off" onkeydown="if(event.key==='Enter')loginSchool()"/>
+        </div>
+        <button class="btn btn-p btn-fw" id="btn-school-login" onclick="loginSchool()">접속하기</button>
       </div>
-      <div class="fg"><label class="fl">비밀번호</label>
-        <input class="fi" id="l-spw" type="password" placeholder="비밀번호 입력" autocomplete="off" onkeydown="if(event.key==='Enter')loginSchool()"/>
+
+      <!-- 발주청 탭 -->
+      <div id="lp-agency" style="display:none">
+        <div id="lp-agency-login">
+          <div class="fg"><label class="fl">아이디 (교육청명)</label>
+            <input class="fi" id="l-aid" type="text" placeholder="예: 경기도교육청" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('l-apw').focus()"/>
+          </div>
+          <div class="fg"><label class="fl">비밀번호</label>
+            <input class="fi" id="l-apw" type="password" placeholder="비밀번호 입력" autocomplete="off" onkeydown="if(event.key==='Enter')loginAgency()"/>
+          </div>
+          <button class="btn btn-p btn-fw" id="btn-agency-login" onclick="loginAgency()">접속하기</button>
+        </div>
+        <!-- 인증 후 프로젝트 선택 (인증 전 비공개) -->
+        <div id="lp-agency-proj" style="display:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;background:var(--blue-l);border-radius:8px;font-size:13px">
+            <span>✅</span><span style="color:var(--blue);font-weight:600" id="l-agency-authed"></span>
+          </div>
+          <div class="fg"><label class="fl">프로젝트 선택</label>
+            <select class="fi" id="l-agency-proj-sel" style="cursor:pointer">
+              <option value="">— 프로젝트를 선택하세요 —</option>
+            </select>
+          </div>
+          <button class="btn btn-p btn-fw" onclick="enterAgencyProject()">입장하기 →</button>
+        </div>
       </div>
-      <button class="btn btn-p btn-fw" onclick="loginSchool()">접속하기</button>
-    </div>
-    <div id="lp-agency" style="display:none">
-      <div class="fg"><label class="fl">아이디 (교육청명)</label>
-        <input class="fi" id="l-aid" type="text" placeholder="예: 경기도교육청" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('l-apw').focus()"/>
+
+      <!-- 관리자 탭 -->
+      <div id="lp-admin" style="display:none">
+        <div id="lp-admin-login">
+          <div class="fg"><label class="fl">아이디</label>
+            <input class="fi" id="l-adid" type="text" placeholder="관리자 아이디" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('l-adpw').focus()"/>
+          </div>
+          <div class="fg"><label class="fl">비밀번호</label>
+            <input class="fi" id="l-adpw" type="password" placeholder="관리자 비밀번호" autocomplete="off" onkeydown="if(event.key==='Enter')loginAdmin()"/>
+          </div>
+          <button class="btn btn-p btn-fw" id="btn-admin-login" onclick="loginAdmin()">로그인</button>
+        </div>
+        <!-- 인증 후 프로젝트 선택 (인증 전 비공개) -->
+        <div id="lp-admin-proj" style="display:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;background:var(--blue-l);border-radius:8px;font-size:13px">
+            <span>✅</span><span style="color:var(--blue);font-weight:600">관리자 인증 완료</span>
+          </div>
+          <div class="fg"><label class="fl">프로젝트 선택</label>
+            <select class="fi" id="l-admin-proj-sel" style="cursor:pointer">
+              <option value="">— 프로젝트를 선택하세요 (없으면 바로 입장) —</option>
+            </select>
+          </div>
+          <button class="btn btn-p btn-fw" onclick="enterAdminProject()">입장하기 →</button>
+        </div>
       </div>
-      <div class="fg"><label class="fl">비밀번호</label>
-        <input class="fi" id="l-apw" type="password" placeholder="비밀번호 입력" autocomplete="off" onkeydown="if(event.key==='Enter')loginAgency()"/>
-      </div>
-      <button class="btn btn-p btn-fw" onclick="loginAgency()">접속하기</button>
-    </div>
-    <div id="lp-admin" style="display:none">
-      <div class="fg"><label class="fl">아이디</label>
-        <input class="fi" id="l-adid" type="text" placeholder="관리자 아이디" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('l-adpw').focus()"/>
-      </div>
-      <div class="fg"><label class="fl">비밀번호</label>
-        <input class="fi" id="l-adpw" type="password" placeholder="관리자 비밀번호" autocomplete="off" onkeydown="if(event.key==='Enter')loginAdmin()"/>
-      </div>
-      <button class="btn btn-p btn-fw" onclick="loginAdmin()">로그인</button>
-    </div>
-    <div class="lerr" id="lerr"></div>
+
+      <div class="lerr" id="lerr"></div>
     </div><!-- /lp-login-step -->
   </div>
 </div>
@@ -942,83 +961,169 @@ function fileToBase64(file){
 // ════════════════════════════════════
 const RAW='https://raw.githubusercontent.com/yun9473/upload-system/main';
 
+// 프로젝트 index.json 조회 (인증 후에만 호출 — 로그인 전 화면에 노출 안 됨)
+async function fetchProjectIndex(){
+  try{
+    const r=await fetch(`${RAW}/data/projects/index.json?_=${Date.now()}`);
+    if(!r.ok) return null;
+    allProjects=await r.json();
+    return allProjects;
+  }catch{ return null; }
+}
+
+// 특정 프로젝트 JSON 로드 후 전역 변수 세팅
+async function loadProject(id){
+  const r=await fetch(`${RAW}/data/projects/${id}.json?_=${Date.now()}`);
+  if(!r.ok) throw new Error('프로젝트 로드 실패');
+  currentProject=await r.json();
+  SCHOOLS=currentProject.schools.slice().sort((a,b)=>a.disp-b.disp);
+  DEFAULT_CODES=currentProject.codes||{};
+}
+
+// 관리자 설정 탭 내부에서 프로젝트 목록 갱신용
 async function initProjectList(){
-  const sel=document.getElementById('l-proj');
   try{
     const r=await fetch(`${RAW}/data/projects/index.json?_=${Date.now()}`);
     if(!r.ok) throw new Error();
     allProjects=await r.json();
-    sel.innerHTML='<option value="">— 프로젝트를 선택하세요 —</option>'+
-      allProjects.map(p=>`<option value="${p.id}">[${p.교육청}] ${p.name} (${p.year})</option>`).join('');
-  }catch{
-    sel.innerHTML='<option value="">⚠️ 목록 로드 실패 — 새로고침</option>';
-  }
+  }catch{ allProjects=[]; }
 }
 
-function onProjSelect(id){
-  document.getElementById('btn-proj-next').disabled=!id;
-}
-
-async function confirmProject(){
-  const id=document.getElementById('l-proj').value;
-  if(!id) return;
-  const btn=document.getElementById('btn-proj-next');
-  btn.disabled=true; btn.textContent='불러오는 중…';
-  try{
-    const r=await fetch(`${RAW}/data/projects/${id}.json?_=${Date.now()}`);
-    if(!r.ok) throw new Error();
-    currentProject=await r.json();
-    SCHOOLS=currentProject.schools.slice().sort((a,b)=>a.disp-b.disp);
-    DEFAULT_CODES=currentProject.codes||{};
-    // 로그인 단계로 전환
-    document.getElementById('lp-proj-step').style.display='none';
-    document.getElementById('lp-login-step').style.display='block';
-    document.getElementById('l-proj-badge').textContent=`[${currentProject.교육청}] ${currentProject.name} (${currentProject.year})`;
-    document.getElementById('l-sub').textContent=currentProject.name;
-  }catch{
-    alert('프로젝트를 불러오지 못했습니다. 다시 시도해주세요.');
-  }
-  btn.disabled=false; btn.textContent='다음 →';
-}
-
-function backToProject(){
-  currentProject=null; SCHOOLS=[]; DEFAULT_CODES={};
-  document.getElementById('lp-proj-step').style.display='block';
-  document.getElementById('lp-login-step').style.display='none';
-  document.getElementById('lerr').textContent='';
-}
+function showLoginErr(msg){ document.getElementById('lerr').textContent=msg; }
+function clearLoginErr(){ document.getElementById('lerr').textContent=''; }
 
 function switchLTab(tab,el){
   document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
+  clearLoginErr();
   ['school','agency','admin'].forEach(t=>{document.getElementById('lp-'+t).style.display=t===tab?'block':'none';});
 }
-function loginSchool(){
-  if(!currentProject){ document.getElementById('lerr').textContent='프로젝트를 먼저 선택해주세요.'; return; }
-  const id=document.getElementById('l-sid').value.trim();
+
+async function loginSchool(){
+  const schoolName=document.getElementById('l-sid').value.trim();
   const pw=document.getElementById('l-spw').value.trim();
-  if(pw!==(cfg().schoolPw||'1234')){ document.getElementById('lerr').textContent='비밀번호가 틀렸습니다.'; return; }
-  const codes=getSchoolCodes();
-  const ids=codes[id];
-  if(ids&&ids.length){ role='school'; visIds=[...ids]; startApp(`학교 (${id})`); }
-  else document.getElementById('lerr').textContent='학교명이 올바르지 않습니다.';
+  if(!schoolName){ showLoginErr('학교명을 입력하세요.'); return; }
+  if(pw!==(cfg().schoolPw||'1234')){ showLoginErr('비밀번호가 틀렸습니다.'); return; }
+
+  const btn=document.getElementById('btn-school-login');
+  btn.disabled=true; btn.textContent='검색 중…';
+  showLoginErr('소속 프로젝트 확인 중...');
+
+  try{
+    const projects=await fetchProjectIndex();
+    if(!projects){ showLoginErr('서버 연결 오류. 잠시 후 다시 시도해주세요.'); return; }
+    for(const meta of projects){
+      try{
+        const r=await fetch(`${RAW}/data/projects/${meta.id}.json?_=${Date.now()}`);
+        if(!r.ok) continue;
+        const proj=await r.json();
+        if(proj.codes && proj.codes[schoolName]){
+          currentProject=proj;
+          SCHOOLS=proj.schools.slice().sort((a,b)=>a.disp-b.disp);
+          DEFAULT_CODES=proj.codes||{};
+          role='school'; visIds=[...proj.codes[schoolName]];
+          clearLoginErr();
+          startApp(`학교 (${schoolName})`);
+          return;
+        }
+      }catch{}
+    }
+    showLoginErr('학교명이 올바르지 않습니다.');
+  }finally{
+    btn.disabled=false; btn.textContent='접속하기';
+  }
 }
-function loginAgency(){
-  if(!currentProject){ document.getElementById('lerr').textContent='프로젝트를 먼저 선택해주세요.'; return; }
-  const id=document.getElementById('l-aid').value.trim();
+
+async function loginAgency(){
+  const agencyName=document.getElementById('l-aid').value.trim();
   const pw=document.getElementById('l-apw').value.trim();
-  if(!id){ document.getElementById('lerr').textContent='교육청명을 입력하세요.'; return; }
-  if(pw!==(cfg().agencyPw||'12345')){ document.getElementById('lerr').textContent='비밀번호가 틀렸습니다.'; return; }
-  role='agency'; visIds=SCHOOLS.map(s=>s.id); startApp(`발주청 (${id})`);
+  if(!agencyName){ showLoginErr('교육청명을 입력하세요.'); return; }
+  if(pw!==(cfg().agencyPw||'12345')){ showLoginErr('비밀번호가 틀렸습니다.'); return; }
+
+  const btn=document.getElementById('btn-agency-login');
+  btn.disabled=true; btn.textContent='확인 중…';
+  showLoginErr('프로젝트 목록 불러오는 중...');
+
+  try{
+    const projects=await fetchProjectIndex();
+    if(!projects){ showLoginErr('서버 연결 오류. 잠시 후 다시 시도해주세요.'); return; }
+    const matching=projects.filter(p=>p.교육청===agencyName||p.교육청.includes(agencyName));
+    if(matching.length===0){ showLoginErr('해당 교육청의 프로젝트가 없습니다.'); return; }
+    clearLoginErr();
+    if(matching.length===1){
+      await loadProject(matching[0].id);
+      role='agency'; visIds=SCHOOLS.map(s=>s.id);
+      startApp(`발주청 (${agencyName})`);
+    } else {
+      const sel=document.getElementById('l-agency-proj-sel');
+      sel.innerHTML='<option value="">— 프로젝트를 선택하세요 —</option>'+
+        matching.map(p=>`<option value="${p.id}">${p.name} (${p.year})</option>`).join('');
+      document.getElementById('l-agency-authed').textContent=`${agencyName} 인증 완료`;
+      sel._agencyName=agencyName;
+      document.getElementById('lp-agency-login').style.display='none';
+      document.getElementById('lp-agency-proj').style.display='block';
+    }
+  }finally{
+    btn.disabled=false; btn.textContent='접속하기';
+  }
 }
-function loginAdmin(){
+
+async function enterAgencyProject(){
+  const sel=document.getElementById('l-agency-proj-sel');
+  const id=sel.value;
+  if(!id){ showLoginErr('프로젝트를 선택해주세요.'); return; }
+  try{
+    await loadProject(id);
+    role='agency'; visIds=SCHOOLS.map(s=>s.id);
+    clearLoginErr();
+    startApp(`발주청 (${sel._agencyName||''})`);
+  }catch(e){ showLoginErr('프로젝트 로드 실패: '+e.message); }
+}
+
+async function loginAdmin(){
   const id=document.getElementById('l-adid').value.trim();
   const pw=document.getElementById('l-adpw').value.trim();
-  if(id!==(cfg().adminId||'kege')){ document.getElementById('lerr').textContent='아이디가 틀렸습니다.'; return; }
-  if(pw!==(cfg().adminPw||'0381')){ document.getElementById('lerr').textContent='비밀번호가 틀렸습니다.'; return; }
-  // 관리자는 프로젝트 없이도 로그인 가능 (프로젝트 관리 목적)
-  if(!currentProject){ SCHOOLS=[]; DEFAULT_CODES={}; }
-  role='admin'; visIds=SCHOOLS.map(s=>s.id); startApp('관리자');
+  if(id!==(cfg().adminId||'kege')){ showLoginErr('아이디가 틀렸습니다.'); return; }
+  if(pw!==(cfg().adminPw||'0381')){ showLoginErr('비밀번호가 틀렸습니다.'); return; }
+
+  const btn=document.getElementById('btn-admin-login');
+  btn.disabled=true; btn.textContent='확인 중…';
+  showLoginErr('프로젝트 목록 불러오는 중...');
+
+  try{
+    const projects=await fetchProjectIndex();
+    clearLoginErr();
+    if(!projects||projects.length===0){
+      role='admin'; SCHOOLS=[]; DEFAULT_CODES={};
+      startApp('관리자');
+      return;
+    }
+    if(projects.length===1){
+      await loadProject(projects[0].id);
+      role='admin'; visIds=SCHOOLS.map(s=>s.id);
+      startApp('관리자');
+    } else {
+      const sel=document.getElementById('l-admin-proj-sel');
+      sel.innerHTML='<option value="">— 프로젝트를 선택하세요 (없으면 전체 관리) —</option>'+
+        projects.map(p=>`<option value="${p.id}">[${p.교육청}] ${p.name} (${p.year})</option>`).join('');
+      document.getElementById('lp-admin-login').style.display='none';
+      document.getElementById('lp-admin-proj').style.display='block';
+    }
+  }finally{
+    btn.disabled=false; btn.textContent='로그인';
+  }
+}
+
+async function enterAdminProject(){
+  const sel=document.getElementById('l-admin-proj-sel');
+  const id=sel.value;
+  try{
+    if(id) await loadProject(id);
+    else { currentProject=null; SCHOOLS=[]; DEFAULT_CODES={}; }
+    role='admin'; visIds=SCHOOLS.map(s=>s.id);
+    clearLoginErr();
+    startApp('관리자');
+  }catch(e){ showLoginErr('프로젝트 로드 실패: '+e.message); }
 }
 
 async function startApp(label){
@@ -1058,9 +1163,11 @@ function logout(){
   document.getElementById('screen-app').style.display='none';
   role='school'; visIds=[]; curSchoolId=null; schoolFiles=[]; bulkFiles=[];
   currentProject=null; SCHOOLS=[]; DEFAULT_CODES={};
-  // 프로젝트 선택 화면으로 복귀
-  document.getElementById('lp-proj-step').style.display='block';
-  document.getElementById('lp-login-step').style.display='none';
+  // 로그인 탭 초기 상태 복원
+  document.getElementById('lp-agency-login').style.display='block';
+  document.getElementById('lp-agency-proj').style.display='none';
+  document.getElementById('lp-admin-login').style.display='block';
+  document.getElementById('lp-admin-proj').style.display='none';
   document.getElementById('mi-admin').style.display='none';
   document.getElementById('ag-tabs').style.display='none';
   document.getElementById('school-info-box').style.display='none';
@@ -2033,8 +2140,6 @@ async function deleteProject(id, name){
 // 세션 복원 (새로고침 유지)
 // ════════════════════════════════════
 (async function restoreSession(){
-  // 프로젝트 목록 먼저 로드
-  await initProjectList();
   try{
     const s=JSON.parse(localStorage.getItem('bzSession')||'null');
     if(!s) return;
