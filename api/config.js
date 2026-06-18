@@ -5,6 +5,7 @@ export default function handler(req, res) {
     return res.status(200).json({
       paUrl: process.env.PA_URL || '',
       basePath: process.env.BASE_PATH || '',
+      neisKey: process.env.NEIS_KEY || '',
     });
   }
 

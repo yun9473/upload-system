@@ -1942,9 +1942,11 @@ function loadAdminForm(){
 // ════════════════════════════════════
 // NEIS 학교 전화번호 자동조회
 // ════════════════════════════════════
-const getPhones = () => JSON.parse(localStorage.getItem('bzPhones')||'{}');
+// 전화번호: 프로젝트 JSON에 저장 (모든 컴퓨터 공유) + localStorage 캐시
+const getPhones = () => ({...(currentProject?.phones||{}), ...JSON.parse(localStorage.getItem('bzPhones')||'{}')});
 const savePhone = (schoolName, tel) => {
-  const d=getPhones(); d[schoolName]=tel; localStorage.setItem('bzPhones',JSON.stringify(d));
+  const d=JSON.parse(localStorage.getItem('bzPhones')||'{}');
+  d[schoolName]=tel; localStorage.setItem('bzPhones',JSON.stringify(d));
 };
 
 function saveNeisKey(){
@@ -1978,8 +1980,8 @@ async function fetchPhoneForSchool(schoolName, apiKey){
 }
 
 async function fetchAllPhones(){
-  const apiKey = cfg().neisKey;
-  if(!apiKey){ toast('NEIS API 키를 먼저 저장해주세요','error'); return; }
+  const apiKey = cfg().neisKey || serverCfg.neisKey;
+  if(!apiKey){ toast('NEIS API 키를 먼저 저장해주세요 (관리자 설정 또는 Vercel 환경변수 NEIS_KEY)','error'); return; }
 
   const btn=document.getElementById('btn-neis-fetch');
   const status=document.getElementById('neis-status');
@@ -2009,6 +2011,19 @@ async function fetchAllPhones(){
   status.textContent=`완료 — 성공 ${ok}개 / 미조회 ${fail}개`;
   btn.disabled=false;
   toast(`전화번호 조회 완료 (${ok}개 성공)`,'success');
+
+  // 프로젝트 JSON에 전화번호 저장 → 모든 컴퓨터에서 공유
+  if(ok>0 && currentProject){
+    try{
+      const phones=JSON.parse(localStorage.getItem('bzPhones')||'{}');
+      currentProject.phones={...(currentProject.phones||{}), ...phones};
+      await fetch('/api/save-project',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'save', id:currentProject.id, data:currentProject})
+      });
+      toast('전화번호가 서버에 저장되었습니다 (모든 컴퓨터 공유)','success');
+    }catch(e){ toast('서버 저장 실패 — 로컬에만 저장됨','error'); }
+  }
 }
 function savePaConfig(){
   saveCfg({paUrl:document.getElementById('a-paurl').value.trim(),basePath:document.getElementById('a-basepath').value.trim()});
