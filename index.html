@@ -1519,7 +1519,12 @@ function saveSchoolCodes(){
 function confirmReset(){
   document.getElementById('m-title').textContent='체크리스트 초기화';
   document.getElementById('m-body').textContent='모든 수신 현황이 초기화됩니다. SharePoint 파일은 유지됩니다.';
-  document.getElementById('m-ok').onclick=()=>{ localStorage.removeItem('bzCL'); closeModal(); toast('초기화 완료','info'); buildSidebar(); };
+  document.getElementById('m-ok').onclick=()=>{
+    localStorage.removeItem('bzCL');
+    schoolFiles=[]; bulkFiles=[];
+    renderSchoolFiles(); renderBulkTable();
+    closeModal(); toast('초기화 완료','info'); buildSidebar();
+  };
   document.getElementById('mbg').classList.add('open');
 }
 function closeModal(){ document.getElementById('mbg').classList.remove('open'); }
