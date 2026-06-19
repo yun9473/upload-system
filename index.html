@@ -1926,17 +1926,38 @@ function exportExcel(){
 // ════════════════════════════════════
 // ADMIN
 // ════════════════════════════════════
-function loadAdminForm(){
+async function loadAdminForm(){
   if(role!=='admin') return;
   buildProjectList();
   const c=cfg();
   document.getElementById('a-paurl').value=c.paUrl||'';
   document.getElementById('a-basepath').value=c.basePath||'';
   document.getElementById('a-agc').value=c.agencyCode||'교육청2026';
-  document.getElementById('a-neis-key').value=c.neisKey?'●'.repeat(16):''; // 마스킹 표시
+  document.getElementById('a-neis-key').value=c.neisKey?'●'.repeat(16):'';
   const phones=getPhones();
   const cnt=Object.keys(phones).length;
   if(cnt>0) document.getElementById('neis-status').textContent=`저장된 번호 ${cnt}개교`;
+
+  // localStorage에 전화번호가 있는데 프로젝트 JSON에 없으면 자동 동기화
+  await syncPhonesToProject();
+}
+
+async function syncPhonesToProject(){
+  if(!currentProject) return;
+  const local=JSON.parse(localStorage.getItem('bzPhones')||'{}');
+  const localCnt=Object.keys(local).length;
+  if(localCnt===0) return;
+  // 프로젝트에 이미 동일한 수의 번호가 있으면 스킵
+  const projCnt=Object.keys(currentProject.phones||{}).length;
+  if(projCnt>=localCnt) return;
+  try{
+    currentProject.phones={...(currentProject.phones||{}), ...local};
+    await fetch('/api/save-project',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'save', id:currentProject.id, data:currentProject})
+    });
+    toast(`전화번호 ${localCnt}개교 서버 동기화 완료 (모든 컴퓨터 공유)`,'success');
+  }catch(e){ console.error('phone sync failed',e); }
 }
 
 // ════════════════════════════════════
