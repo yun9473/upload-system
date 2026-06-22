@@ -1168,6 +1168,8 @@ async function startApp(label){
   document.getElementById('btn-excel-upload').style.display=(role==='school')?'none':'inline-flex';
   document.getElementById('btn-excel-status').style.display=(role==='school')?'none':'inline-flex';
   buildSchoolTabs(); buildSidebar(); loadAdminForm(); updatePaBanner();
+  // 관리자: localStorage 전화번호 → 프로젝트 JSON 자동 동기화
+  if(role==='admin') syncPhonesToProject();
   const my=SCHOOLS.filter(s=>visIds.includes(s.id));
   document.getElementById('up-sub').textContent = role==='school'
     ? my.map(s=>sLabel(s)).join(' · ')
