@@ -1807,7 +1807,7 @@ function buildChecklist(sid){
       ${tbl(CHECKLIST.filter(i=>i.schoolOpt).map(i=>row(i)).join(''))}
     </div>
     <div class="cl-section">
-      <div class="cl-sec-hd ag">🏛️ 발주청 제출 현황 (참고용)</div>
+      <div class="cl-sec-hd ag">🏛️ 교육지원청 제출 현황 (참고용)</div>
       ${tbl(CHECKLIST.filter(i=>i.uploader==='agency').map(i=>row(i,true)).join(''))}
     </div>`;
   } else {
