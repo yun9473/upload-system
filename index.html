@@ -287,6 +287,7 @@ body{font-family:'Pretendard','Segoe UI','Apple SD Gothic Neo',sans-serif;backgr
   <div class="topbar">
     <div class="topbar-title"><img src="kege_logo.png" alt="KEGE" style="height:22px;vertical-align:middle;filter:brightness(0)invert(1);margin-right:8px"/>기초자료 수신 관리 시스템</div>
     <div class="topbar-right">
+      <span id="topbar-dday" style="display:none;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700"></span>
       <span class="tu" id="tu"></span>
       <button class="tbtn" onclick="logout()">로그아웃</button>
     </div>
@@ -452,7 +453,23 @@ body{font-family:'Pretendard','Segoe UI','Apple SD Gothic Neo',sans-serif;backgr
 
       <!-- ADMIN SCREEN -->
       <div id="screen-admin" class="screen">
-        <div style="font-size:19px;font-weight:700;margin-bottom:16px">⚙️ 관리자 설정</div>
+        <div style="font-size:19px;font-weight:500;margin-bottom:16px">⚙️ 관리자 설정</div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">📅 제출 마감일 설정</div>
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <div class="fg" style="margin-bottom:0;flex:1;min-width:180px">
+              <label class="fl">마감일</label>
+              <input class="fi" id="a-deadline" type="date"/>
+            </div>
+            <div class="fg" style="margin-bottom:0;flex:1;min-width:180px">
+              <label class="fl">안내 메시지 (선택)</label>
+              <input class="fi" id="a-deadline-msg" placeholder="예: 기초자료 제출 마감"/>
+            </div>
+            <button class="btn btn-p btn-sm" onclick="saveDeadline()">저장</button>
+            <button class="btn btn-o btn-sm" onclick="clearDeadline()">해제</button>
+          </div>
+          <div id="deadline-preview" style="margin-top:10px;font-size:13px;color:var(--gray)"></div>
+        </div>
         <div class="admin-grid">
           <div class="card">
             <div class="card-title">⚡ Power Automate 설정</div>
@@ -1167,8 +1184,7 @@ async function startApp(label){
   }
   document.getElementById('btn-excel-upload').style.display=(role==='school')?'none':'inline-flex';
   document.getElementById('btn-excel-status').style.display=(role==='school')?'none':'inline-flex';
-  buildSchoolTabs(); buildSidebar(); loadAdminForm(); updatePaBanner();
-  // 관리자: localStorage 전화번호 → 프로젝트 JSON 자동 동기화
+  buildSchoolTabs(); buildSidebar(); loadAdminForm(); updatePaBanner(); renderDday();
   if(role==='admin') syncPhonesToProject();
   const my=SCHOOLS.filter(s=>visIds.includes(s.id));
   document.getElementById('up-sub').textContent = role==='school'
@@ -1937,6 +1953,9 @@ async function loadAdminForm(){
   document.getElementById('a-basepath').value=c.basePath||'';
   document.getElementById('a-agc').value=c.agencyCode||'교육청2026';
   document.getElementById('a-neis-key').value=c.neisKey?'●'.repeat(16):'';
+  document.getElementById('a-deadline').value=getDeadline()||'';
+  document.getElementById('a-deadline-msg').value=currentProject?.deadlineMsg||'';
+  renderDeadlinePreview();
   const phones=getPhones();
   const cnt=Object.keys(phones).length;
   if(cnt>0) document.getElementById('neis-status').textContent=`저장된 번호 ${cnt}개교`;
@@ -2049,6 +2068,75 @@ async function fetchAllPhones(){
     }catch(e){ toast('서버 저장 실패 — 로컬에만 저장됨','error'); }
   }
 }
+// ════════════════════════════════════
+// 제출 마감일
+// ════════════════════════════════════
+function getDeadline(){ return currentProject?.deadline||null; }
+function getDeadlineMsg(){ return currentProject?.deadlineMsg||'제출 마감'; }
+
+function calcDday(dateStr){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const target=new Date(dateStr); target.setHours(0,0,0,0);
+  return Math.ceil((target-today)/(1000*60*60*24));
+}
+
+function renderDday(){
+  const el=document.getElementById('topbar-dday');
+  const dl=getDeadline();
+  if(!dl){ el.style.display='none'; return; }
+  const d=calcDday(dl);
+  const msg=getDeadlineMsg();
+  let text, bg;
+  if(d>7){ text=`${msg} D-${d}`; bg='rgba(255,255,255,.12)'; el.style.color='#fff'; }
+  else if(d>3){ text=`${msg} D-${d}`; bg='#854f0b'; el.style.color='#fff'; }
+  else if(d>0){ text=`⚠️ ${msg} D-${d}`; bg='#a32d2d'; el.style.color='#fff'; }
+  else if(d===0){ text=`🔴 오늘 마감!`; bg='#a32d2d'; el.style.color='#fff'; }
+  else { text=`마감 ${Math.abs(d)}일 경과`; bg='#636363'; el.style.color='#fff'; }
+  el.textContent=text; el.style.background=bg; el.style.display='inline-block';
+}
+
+async function saveDeadline(){
+  const date=document.getElementById('a-deadline').value;
+  if(!date){ toast('날짜를 선택해주세요','error'); return; }
+  if(!currentProject){ toast('프로젝트가 선택되지 않았습니다','error'); return; }
+  const msg=document.getElementById('a-deadline-msg').value.trim()||'제출 마감';
+  currentProject.deadline=date;
+  currentProject.deadlineMsg=msg;
+  try{
+    await fetch('/api/save-project',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'save', id:currentProject.id, data:currentProject})
+    });
+    toast(`마감일 설정: ${date} (${msg})`,'success');
+    renderDday(); renderDeadlinePreview();
+  }catch(e){ toast('저장 실패: '+e.message,'error'); }
+}
+
+async function clearDeadline(){
+  if(!currentProject) return;
+  delete currentProject.deadline;
+  delete currentProject.deadlineMsg;
+  try{
+    await fetch('/api/save-project',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'save', id:currentProject.id, data:currentProject})
+    });
+    toast('마감일 해제됨','info');
+    renderDday(); renderDeadlinePreview();
+  }catch(e){ toast('저장 실패','error'); }
+}
+
+function renderDeadlinePreview(){
+  const el=document.getElementById('deadline-preview');
+  if(!el) return;
+  const dl=getDeadline();
+  if(!dl){ el.textContent='마감일 미설정'; return; }
+  const d=calcDday(dl);
+  const msg=getDeadlineMsg();
+  const color=d<=3?'var(--red)':d<=7?'var(--amber)':'var(--green)';
+  el.innerHTML=`현재 설정: <strong style="color:${color}">${dl} (${msg}, D${d>0?'-'+d:d===0?'-Day':'+'+Math.abs(d)})</strong>`;
+}
+
 function savePaConfig(){
   saveCfg({paUrl:document.getElementById('a-paurl').value.trim(),basePath:document.getElementById('a-basepath').value.trim()});
   updatePaBanner(); toast('설정 저장됨','success');
