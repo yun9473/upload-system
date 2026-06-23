@@ -1647,7 +1647,7 @@ async function doBulkUpload(){
       }
       try{
         await uploadViaPA(paUrl,f,path);
-        if(f._sid!=='common') updateCLfromFile(f._sid,f);
+        updateCLfromFile(f._sid,f);
         // 기타 폴더로 분류된 파일 기록 (관리자 확인용)
         if(f._folder==='10. 기타' && f._sid!=='common') recordOtherFile(f._sid,f.name);
       }catch(e){
