@@ -1646,6 +1646,7 @@ async function doBulkUpload(){
         setPg('bulk',`[${s.school}] ${f.name}`,Math.round(done/snapshot.length*100));
       }
       try{
+        console.log('[UPLOAD]', f.name, '→', path, '| _folder:', f._folder, '| _dropFolder:', f._dropFolder, '| _sid:', f._sid);
         await uploadViaPA(paUrl,f,path);
         updateCLfromFile(f._sid,f);
         // 기타 폴더로 분류된 파일 기록 (관리자 확인용)
