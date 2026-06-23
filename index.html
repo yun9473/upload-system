@@ -967,7 +967,7 @@ async function extractZip(zipFile){
     const blob = await entry.async('blob');
     const f = new File([blob], name, {type: blob.type||''});
     // ZIP 내 폴더 구조를 dropFolder로 활용
-    f._dropFolder = parts.length ? parts[0] : null;
+    f._dropFolder = parts.length ? parts.join('/') : null;
     f._fromZip = zipFile.name;
     result.push(f);
   }
