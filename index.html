@@ -1709,27 +1709,39 @@ function clearOtherFiles(sid){ localStorage.removeItem(otherKey(sid)); }
 // ════════════════════════════════════
 function updateCLfromFile(sid,f){
   const l=f.name.toLowerCase().replace(/\s/g,'');
-  // 폴더명 기반 매칭: 파일이 특정 폴더 안에 있으면 해당 체크항목 자동 O
   const folderMatch=f._folder||'';
+  // 파일명에 언급된 모든 학교 ID 수집
+  const mentionedSids=new Set();
+  mentionedSids.add(sid);
+  for(const s of SCHOOLS){
+    const sn=s.school.toLowerCase().replace(/\s/g,'');
+    if(l.includes(sn)) mentionedSids.add(s.id);
+    const b=schoolBase(s.school);
+    if(b.length>=2 && l.includes(b.toLowerCase())) mentionedSids.add(s.id);
+  }
   CHECKLIST.forEach(item=>{
     const folderHit=item.folder && folderMatch===item.folder;
     let kwHit=false;
     for(const k of item.kw){ if(l.includes(k)){ kwHit=true; break; } }
     if(folderHit||kwHit){
         const val = item.cat==='struct' ? (f._insp?.year||f._year||'O') : 'O';
-        // global 항목: 1개 파일이면 모든 학교에 O 체크
         if(item.global){
           for(const s of SCHOOLS) setCLv(s.id,item.key,String(val));
         } else {
-          setCLv(sid,item.key,String(val));
+          // 파일명에 언급된 모든 학교에 체크
+          for(const id of mentionedSids) setCLv(id,item.key,String(val));
         }
-        if(f._insp?.grade&&f._insp.type!=='seismic')  setCLv(sid,item.key+'_grade',f._insp.grade);
-        if(f._insp?.period&&f._insp.type!=='seismic') setCLv(sid,item.key+'_period',f._insp.period);
-        // 건축물대장·공유재산 연면적 저장
+        if(f._insp?.grade&&f._insp.type!=='seismic'){
+          for(const id of mentionedSids) setCLv(id,item.key+'_grade',f._insp.grade);
+        }
+        if(f._insp?.period&&f._insp.type!=='seismic'){
+          for(const id of mentionedSids) setCLv(id,item.key+'_period',f._insp.period);
+        }
         if(f._bldg&&!f._bldg.scanned&&f._bldg.pairs?.length){
-          // 현재 학교(sid)와 매칭된 쌍 우선, 없으면 첫 번째
           const matched=f._bldg.pairs.find(p=>p.school?.id===sid)||f._bldg.pairs[0];
-          if(matched?.area) setCLv(sid,item.key+'_area',matched.area);
+          if(matched?.area){
+            for(const id of mentionedSids) setCLv(id,item.key+'_area',matched.area);
+          }
         }
         break;
       }
