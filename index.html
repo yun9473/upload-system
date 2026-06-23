@@ -193,9 +193,9 @@ body{font-family:'Pretendard','Segoe UI','Apple SD Gothic Neo',sans-serif;backgr
 /* MODAL */
 .mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
 .mbg.open{display:flex}
-.modal{background:#fff;border-radius:var(--radius);padding:28px;width:min(500px,95vw);box-shadow:0 8px 24px rgba(26,26,26,.12)}
-.modal-title{font-size:17px;font-weight:500;margin-bottom:12px}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.modal{background:#fff;border-radius:var(--radius);padding:28px;width:min(500px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(26,26,26,.12)}
+.modal-title{font-size:17px;font-weight:500;margin-bottom:12px;flex-shrink:0}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-shrink:0;padding-top:12px;border-top:1px solid var(--gray-b)}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#c2c2c2;border-radius:3px}
 </style>
 </head>
@@ -583,7 +583,7 @@ body{font-family:'Pretendard','Segoe UI','Apple SD Gothic Neo',sans-serif;backgr
 <div class="mbg" id="mbg">
   <div class="modal">
     <div class="modal-title" id="m-title"></div>
-    <div id="m-body" style="font-size:14px;color:var(--text2)"></div>
+    <div id="m-body" style="font-size:14px;color:var(--text2);overflow-y:auto;flex:1;min-height:0"></div>
     <div class="modal-actions">
       <button class="btn btn-o btn-sm" id="m-cancel" onclick="closeModal()">취소</button>
       <button class="btn btn-r btn-sm" id="m-ok">확인</button>
@@ -1743,8 +1743,6 @@ function updateCLfromFile(sid,f){
             for(const id of mentionedSids) setCLv(id,item.key+'_area',matched.area);
           }
         }
-        break;
-      }
     }
   });
   // 합본 파일: 여러 동의 연면적을 각각의 학교에 저장
