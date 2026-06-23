@@ -675,7 +675,7 @@ const CHECKLIST = [
   {key:'precise',  label:'정밀진단',               cat:'struct', cl:'구조',     folder:'02. 정밀(정기)안전점검 보고서', kw:['정밀진단'],                          req:false, uploader:'school', sg:'c3', schoolOpt:true},
   {key:'seismic',  label:'내진성능평가보고서',     cat:'struct', cl:'구조',     folder:'03. 내진성능평가보고서',         kw:['내진','내진성능','내진평가'],        req:true,  uploader:'school', schoolOpt:true},
   {key:'maint',    label:'유지보수이력(최근 10년)',cat:'econ',   cl:'경제성',   folder:'_공통',                      kw:['유지보수','유지관리이력','보수이력','공사내역','공사이력','시설투자','시설투자이력','수선이력','수선내역','공사비','보수공사','시설공사','시설보수','수선유지','개보수','시설투입','투입현황','사업추진현황','환경개선공사','환경개선','건축내역','학점제공간','공간조성'],req:true,  uploader:'school', schoolOpt:true},
-  {key:'realmap',  label:'실배치도',               cat:'common', cl:'공통',     folder:'#대상교 실배치도',              kw:['실배치도','배치도'],                 req:true,  uploader:'school', schoolReq:true},
+  {key:'realmap',  label:'실배치도',               cat:'common', cl:'공통',     folder:'#대상교 실배치도',              kw:['실배치도'],                 req:true,  uploader:'school', schoolReq:true},
   {key:'interview',label:'사전인터뷰 자료',        cat:'common', cl:'공통',     folder:'#사전인터뷰자료',               kw:['인터뷰','사전인터뷰','면담'],        req:true,  uploader:'school', schoolReq:true},
 ];
 
@@ -1726,6 +1726,10 @@ function clearOtherFiles(sid){ localStorage.removeItem(otherKey(sid)); }
 // ════════════════════════════════════
 // CHECKLIST
 // ════════════════════════════════════
+// 폴더를 단독으로 쓰는 항목만 폴더 기반 자동 O 허용 (공유 폴더는 키워드 필수)
+const FOLDER_OWNERS={};
+CHECKLIST.forEach(i=>{ if(i.folder) FOLDER_OWNERS[i.folder]=(FOLDER_OWNERS[i.folder]||0)+1; });
+
 function updateCLfromFile(sid,f){
   const l=f.name.toLowerCase().replace(/\s/g,'');
   const folderMatch=f._folder||'';
@@ -1739,7 +1743,9 @@ function updateCLfromFile(sid,f){
     if(b.length>=2 && l.includes(b.toLowerCase())) mentionedSids.add(s.id);
   }
   CHECKLIST.forEach(item=>{
-    const folderHit=item.folder && folderMatch===item.folder;
+    // 폴더 기반 자동체크: 폴더를 단독 소유한 항목 + global 아님일 때만
+    const folderHit=item.folder && folderMatch===item.folder
+                    && FOLDER_OWNERS[item.folder]===1 && !item.global;
     let kwHit=false;
     for(const k of item.kw){ if(l.includes(k)){ kwHit=true; break; } }
     if(folderHit||kwHit){
