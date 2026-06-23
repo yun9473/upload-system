@@ -987,6 +987,12 @@ async function expandFiles(fileList){
         result.push(f);
       }
     } else {
+      // 폴더 선택(webkitdirectory) / 드래그 시 상대경로를 _dropFolder로 보존
+      if(!f._dropFolder && f.webkitRelativePath){
+        const rp=f.webkitRelativePath.split('/');
+        rp.pop(); // 파일명 제거
+        if(rp.length) f._dropFolder=rp.join('/');
+      }
       result.push(f);
     }
   }
