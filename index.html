@@ -937,8 +937,18 @@ function detectFolderSmart(file){
     const top=file._dropFolder.split('/')[0];
     const known=['01. 도면','02. 정밀(정기)안전점검 보고서','03. 내진성능평가보고서',
       '04. 건축물대장','05. 공유재산관리대장','06. SP','07. 사업계획서',
-      '08. 증축이력 결과','09. 현장사진','10. 기타','#대상교 실배치도','#사전인터뷰자료'];
+      '08. 증축이력 결과','09. 현장사진','10. 기타','#대상교 실배치도','#사전인터뷰자료','_공통'];
     if(known.includes(top)) return top;
+    // 공백/특수문자 무시 매칭
+    const topClean=top.replace(/[\s\-_]/g,'').toLowerCase();
+    const match=known.find(k=>k.replace(/[\s\-_]/g,'').toLowerCase()===topClean);
+    if(match) return match;
+    // 폴더명에 키워드 포함 매칭 (예: "02.정밀안전점검" → "02. 정밀(정기)안전점검 보고서")
+    const topNum=top.match(/^(\d+)/);
+    if(topNum){
+      const numMatch=known.find(k=>k.startsWith(topNum[1]+'.') || k.startsWith(topNum[1]+' '));
+      if(numMatch) return numMatch;
+    }
   }
   return detectFolder(file.name);
 }
