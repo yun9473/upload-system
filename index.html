@@ -669,12 +669,12 @@ const CHECKLIST = [
   {key:'building', label:'건축물대장',             cat:'common', cl:'공통',     folder:'04. 건축물대장',                kw:['건축물대장','건물대장','토지대장','토지및건물','일반건축물'],             req:true, uploader:'agency'},
   {key:'public',   label:'공유재산관리대장',       cat:'common', cl:'공통',     folder:'05. 공유재산관리대장',          kw:['공유재산','재산대장','공유재산관리'],                          req:true, uploader:'agency', priv:true},
   {key:'student',  label:'중장기 학생 배치계획',  cat:'func',   cl:'기능/성능', folder:'07. 사업계획서',                        kw:['배치계획','학생배치','중장기','현황자료','기초현황','추진계획','공간재구조화','사업신청서','제출양식','개요','사업계획','기본현황'],      req:true, uploader:'agency'},
-  {key:'standard', label:'학교급별 시설기준',      cat:'func',   cl:'기능/성능', folder:'_공통',                        kw:['시설기준','교육환경개선','기준단가','기준 단가'],                          req:true, uploader:'agency', global:true},
+  {key:'standard', label:'학교급별 시설기준',      cat:'func',   cl:'기능/성능', folder:'00. 공통',                        kw:['시설기준','교육환경개선','기준단가','기준 단가'],                          req:true, uploader:'agency', global:true},
   {key:'type3',    label:'3종시설물 정기점검',    cat:'struct', cl:'구조',     folder:'02. 정밀(정기)안전점검 보고서', kw:['3종','정기점검','정기안전'],         req:false, uploader:'school', sg:'c3', schoolOpt:true},
   {key:'detail',   label:'정밀점검',               cat:'struct', cl:'구조',     folder:'02. 정밀(정기)안전점검 보고서', kw:['정밀점검'],                          req:false, uploader:'school', sg:'c3', schoolOpt:true},
   {key:'precise',  label:'정밀진단',               cat:'struct', cl:'구조',     folder:'02. 정밀(정기)안전점검 보고서', kw:['정밀진단'],                          req:false, uploader:'school', sg:'c3', schoolOpt:true},
   {key:'seismic',  label:'내진성능평가보고서',     cat:'struct', cl:'구조',     folder:'03. 내진성능평가보고서',         kw:['내진','내진성능','내진평가'],        req:true,  uploader:'school', schoolOpt:true},
-  {key:'maint',    label:'유지보수이력(최근 10년)',cat:'econ',   cl:'경제성',   folder:'_공통',                      kw:['유지보수','유지관리이력','보수이력','공사내역','공사이력','시설투자','시설투자이력','수선이력','수선내역','공사비','보수공사','시설공사','시설보수','수선유지','개보수','시설투입','투입현황','사업추진현황','환경개선공사','환경개선','건축내역','학점제공간','공간조성'],req:true,  uploader:'school', schoolOpt:true},
+  {key:'maint',    label:'유지보수이력(최근 10년)',cat:'econ',   cl:'경제성',   folder:'00. 공통',                      kw:['유지보수','유지관리이력','보수이력','공사내역','공사이력','시설투자','시설투자이력','수선이력','수선내역','공사비','보수공사','시설공사','시설보수','수선유지','개보수','시설투입','투입현황','사업추진현황','환경개선공사','환경개선','건축내역','학점제공간','공간조성'],req:true,  uploader:'school', schoolOpt:true},
   {key:'realmap',  label:'실배치도',               cat:'common', cl:'공통',     folder:'#대상교 실배치도',              kw:['실배치도'],                 req:true,  uploader:'school', schoolReq:true},
   {key:'interview',label:'사전인터뷰 자료',        cat:'common', cl:'공통',     folder:'#사전인터뷰자료',               kw:['인터뷰','사전인터뷰','면담'],        req:true,  uploader:'school', schoolReq:true},
 ];
@@ -694,7 +694,7 @@ const FOLDER_KW = [
   {f:'08. 증축이력 결과',               kw:['증축이력','증축']},
   {f:'09. 현장사진',                    kw:['현장사진']},
   {f:'#사전인터뷰자료',                 kw:['인터뷰','사전인터뷰','면담']},
-  {f:'_공통',                           kw:['시설기준','교육환경개선','기준단가','기준 단가']},
+  {f:'00. 공통',                           kw:['시설기준','교육환경개선','기준단가','기준 단가']},
 ];
 
 // ════════════════════════════════════
@@ -936,7 +936,7 @@ function detectFolderSmart(file){
   if(file._dropFolder){
     const known=['01. 도면','02. 정밀(정기)안전점검 보고서','03. 내진성능평가보고서',
       '04. 건축물대장','05. 공유재산관리대장','06. SP','07. 사업계획서',
-      '08. 증축이력 결과','09. 현장사진','10. 기타','#대상교 실배치도','#사전인터뷰자료','_공통'];
+      '08. 증축이력 결과','09. 현장사진','10. 기타','#대상교 실배치도','#사전인터뷰자료','00. 공통'];
     const parts=file._dropFolder.split('/');
     for(const part of parts){
       // 1순위: 정확히 일치
@@ -957,7 +957,7 @@ function detectFolderSmart(file){
       if(/현장사진/.test(pl)) return '09. 현장사진';
       if(/인터뷰/.test(pl)) return '#사전인터뷰자료';
       if(/실배치/.test(pl)) return '#대상교 실배치도';
-      if(/공통/.test(pl)) return '_공통';
+      if(/공통/.test(pl)) return '00. 공통';
     }
   }
   return detectFolder(file.name);
@@ -1541,14 +1541,14 @@ async function addBulkFiles(fl){
         }
       }
       if(!det.id) det=detectSchool(f.name);
-      // '_공통' 또는 'common' 폴더에 있으면 전체공통으로 자동 배정
+      // '00. 공통' 또는 'common' 폴더에 있으면 전체공통으로 자동 배정
       if(!det.id && f._dropFolder){
         const topFolder=f._dropFolder.split('/')[0];
         if(/^[_]?공통|^common/i.test(topFolder)) det={id:'common',ambig:false};
       }
       f._sid=det.id; f._ambig=det.ambig;
-      // _공통 폴더로 분류된 파일은 자동으로 전체공통 배정
-      if(f._folder==='_공통' && f._sid!=='common') f._sid='common';
+      // 00. 공통 폴더로 분류된 파일은 자동으로 전체공통 배정
+      if(f._folder==='00. 공통' && f._sid!=='common') f._sid='common';
       f._insp=null; f._inspLoading=!!detectInspType(f.name)&&ext(f.name)==='pdf';
       f._bldg=null; f._bldgLoading=!!detectBldgDocType(f.name)&&ext(f.name)==='pdf';
       bulkFiles.push(f);
@@ -1572,7 +1572,7 @@ function renderBulkTable(){
   document.getElementById('rt-summary').textContent=`총 ${bulkFiles.length}개 · 자동감지 ${matched}개 · 미감지 ${bulkFiles.length-matched}개 · 합계 ${fmtSz(totalBytes)}`;
   const visSchools=SCHOOLS.filter(s=>visIds.includes(s.id));
   // 전체공통 + 학교 목록 옵션
-  const commonOpt=`<option value="common">🌐 전체공통 (_공통 폴더)</option>`;
+  const commonOpt=`<option value="common">🌐 전체공통 (00. 공통 폴더)</option>`;
   const schoolOpts=visSchools.map(s=>`<option value="${s.id}">${sLabel(s)}</option>`).join('');
   const allOpts=commonOpt+schoolOpts;
   document.getElementById('rt-tbody').innerHTML=bulkFiles.map((f,i)=>{
@@ -1636,9 +1636,9 @@ async function doBulkUpload(){
     for(const f of snapshot){
       let path;
       if(f._sid==='common'){
-        // 전체공통 → _공통 폴더 바로 아래 (이미 _공통 폴더면 중복 방지)
-        const sub=(f._folder && f._folder!=='_공통') ? f._folder+'/' : '';
-        path=`${base?base+'/':''}_공통/${sub}${f.name}`;
+        // 전체공통 → 00. 공통 폴더 바로 아래 (이미 00. 공통 폴더면 중복 방지)
+        const sub=(f._folder && f._folder!=='00. 공통') ? f._folder+'/' : '';
+        path=`${base?base+'/':''}00. 공통/${sub}${f.name}`;
         setPg('bulk',`[전체공통] ${f.name}`,Math.round(done/snapshot.length*100));
       } else {
         const s=SCHOOLS.find(x=>x.id===f._sid);
