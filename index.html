@@ -939,15 +939,25 @@ function detectFolderSmart(file){
       '08. 증축이력 결과','09. 현장사진','10. 기타','#대상교 실배치도','#사전인터뷰자료','_공통'];
     const parts=file._dropFolder.split('/');
     for(const part of parts){
+      // 1순위: 정확히 일치
       if(known.includes(part)) return part;
-      const clean=part.replace(/[\s\-_]/g,'').toLowerCase();
-      const match=known.find(k=>k.replace(/[\s\-_]/g,'').toLowerCase()===clean);
+      // 2순위: 공백/특수문자 무시 매칭
+      const clean=part.replace(/[\s\-_\(\)]/g,'').toLowerCase();
+      const match=known.find(k=>k.replace(/[\s\-_\(\)]/g,'').toLowerCase()===clean);
       if(match) return match;
-      const num=part.match(/^(\d+)/);
-      if(num){
-        const numMatch=known.find(k=>k.startsWith(num[1]+'.') || k.startsWith(num[1]+' '));
-        if(numMatch) return numMatch;
-      }
+      // 3순위: 폴더명에 타입 핵심 키워드 포함 (학교명과 혼동 방지)
+      const pl=part.toLowerCase();
+      if(/도면/.test(pl)) return '01. 도면';
+      if(/정밀|안전점검|안전진단/.test(pl)) return '02. 정밀(정기)안전점검 보고서';
+      if(/내진/.test(pl)) return '03. 내진성능평가보고서';
+      if(/건축물대장/.test(pl)) return '04. 건축물대장';
+      if(/공유재산/.test(pl)) return '05. 공유재산관리대장';
+      if(/사업계획/.test(pl)) return '07. 사업계획서';
+      if(/증축/.test(pl)) return '08. 증축이력 결과';
+      if(/현장사진/.test(pl)) return '09. 현장사진';
+      if(/인터뷰/.test(pl)) return '#사전인터뷰자료';
+      if(/실배치/.test(pl)) return '#대상교 실배치도';
+      if(/공통/.test(pl)) return '_공통';
     }
   }
   return detectFolder(file.name);
