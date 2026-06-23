@@ -1521,6 +1521,8 @@ async function addBulkFiles(fl){
         if(/^[_]?공통|^common/i.test(topFolder)) det={id:'common',ambig:false};
       }
       f._sid=det.id; f._ambig=det.ambig;
+      // _공통 폴더로 분류된 파일은 자동으로 전체공통 배정
+      if(f._folder==='_공통' && f._sid!=='common') f._sid='common';
       f._insp=null; f._inspLoading=!!detectInspType(f.name)&&ext(f.name)==='pdf';
       f._bldg=null; f._bldgLoading=!!detectBldgDocType(f.name)&&ext(f.name)==='pdf';
       bulkFiles.push(f);
