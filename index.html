@@ -1626,8 +1626,9 @@ async function doBulkUpload(){
     for(const f of snapshot){
       let path;
       if(f._sid==='common'){
-        // 전체공통 → _공통 폴더 바로 아래
-        path=`${base?base+'/':''}_공통/${f._folder}/${f.name}`;
+        // 전체공통 → _공통 폴더 바로 아래 (이미 _공통 폴더면 중복 방지)
+        const sub=(f._folder && f._folder!=='_공통') ? f._folder+'/' : '';
+        path=`${base?base+'/':''}_공통/${sub}${f.name}`;
         setPg('bulk',`[전체공통] ${f.name}`,Math.round(done/snapshot.length*100));
       } else {
         const s=SCHOOLS.find(x=>x.id===f._sid);
